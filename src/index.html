@@ -792,16 +792,14 @@ function renderStats() {
   const nextDeload = (PLAN.deloadWeeks || []).find(k => k >= w); const daysToDeload = nextDeload ? Math.max(0, dayDiff(todayStr(), addDays(PLAN.startDate, (nextDeload - 1) * 7))) : null;
   const doneThisWeek = S.workouts.filter(x => x.week === w && PLAN.order.includes(x.day)).length;
   const nut = nutritionFor(w);
-  const b0 = (PLAN.baseline || {}).weightLb, tg = (PLAN.targets || {}).weightLb;
+  const tg = (PLAN.targets || {}).weightLb;
   const a7 = avgAt(weightSeries(), todayStr());
   const nowLb = a7 != null ? toLb(a7) : null;
-  const cutting = b0 != null && tg != null ? tg <= b0 : true;
-  const cutLabel = cutting ? "已减" : "已增";
-  const moved = (nowLb != null && b0 != null) ? toKg(cutting ? (b0 - nowLb) : (nowLb - b0)) : null;
   const toGo = (nowLb != null && tg != null) ? Math.abs(toKg(nowLb) - toKg(tg)) : null;
+  const stk = streak();
   el("stats").innerHTML = `
     <div><div class="k">今天</div><div class="v">${todayKey && todayKey !== "rest" ? DAY_LBL[todayKey] : "休息"}</div></div>
-    <div><div class="k">${cutLabel}</div><div class="v">${moved != null ? (moved > 0 ? moved.toFixed(1) : "0.0") + "<small> kg</small>" : "--"}</div></div>
+    <div><div class="k">连续</div><div class="v">${stk > 0 ? stk + "<small> 次</small>" : "<small style=\"font-size:13px\">从今天起</small>"}</div></div>
     <div><div class="k">本周训练</div><div class="v">${doneThisWeek}<small>/${Math.max(1, (PLAN.order || []).length)}</small></div></div>
     <div><div class="k">离目标</div><div class="v">${toGo != null ? toGo.toFixed(1) + "<small> kg</small>" : Math.max(0, w) + "<small>/24 周</small>"}</div></div>`;
   let pills = ""; if (w < 1) pills += `${PLAN.startDate.slice(5).replace("-", "/")} 开始 · `; if ((PLAN.deloadWeeks || []).includes(w)) pills += `轻量周:组数减半,重量不变 · `; if ((PLAN.dietBreakWeeks || []).includes(w)) pills += `恢复周:吃 ${nut.kcal} · `;
