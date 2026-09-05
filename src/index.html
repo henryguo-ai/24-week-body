@@ -1117,7 +1117,7 @@ async function renderFood() {
   el("weekAvg").textContent = logged.length ? `${logged.length} 天均值 ${r0(avg)}${Math.abs(avg - T.kcal) <= 100 ? " · 按计划走" : avg > T.kcal ? " · 偏高" : " · 偏低"}` : "";
   const Lst = el("mealList");
   if (!S.meals.length) { Lst.className = "faint"; Lst.textContent = "还没有记录"; }
-  else { Lst.className = ""; Lst.innerHTML = S.meals.map(m => `<div class="meal">${m.photo ? `<img src="${m.photo}" alt="">` : `<div class="ph">🍽</div>`}<div class="body" data-edit="${m.id}" style="cursor:pointer"><div class="t">${esc(m.text || "(照片)")}</div><div class="m"><b>${r0(m.kcal || 0)}</b> kcal · P <b>${r0(m.protein || 0)}</b> · C ${r0(m.carbs || 0)} · F ${r0(m.fat || 0)}</div><div class="mini">${m.time || ""}${m.source === "ai" ? " · AI 估算" : m.source === "quick" ? " · 常吃" : ""}${m.range ? " · " + m.range : ""} · 点一下可改</div></div><button class="icon" data-del="${m.id}" aria-label="删除">×</button></div>`).join(""); Lst.querySelectorAll("[data-del]").forEach(b => b.addEventListener("click", async () => { if (!confirm("删除这餐?")) return; await safe(() => dbDel("meals", b.dataset.del)); toast("已删除"); renderFood(); })); }
+  else { Lst.className = ""; Lst.innerHTML = S.meals.map(m => `<div class="meal">${m.photo ? `<img src="${m.photo}" alt="">` : `<div class="ph">🍽</div>`}<div class="body" data-edit="${m.id}" style="cursor:pointer"><div class="t">${esc(m.text || "(照片)")}</div><div class="m"><b>${r0(m.kcal || 0)}</b> kcal · P <b>${r0(m.protein || 0)}</b> · C ${r0(m.carbs || 0)} · F ${r0(m.fat || 0)}</div><div class="mini">${m.time || ""}${m.source === "ai" ? " · AI 估算" : m.source === "quick" ? " · 常吃" : ""}${m.range ? " · " + esc(m.range) : ""} · 点一下可改</div></div><button class="icon" data-del="${m.id}" aria-label="删除">×</button></div>`).join(""); Lst.querySelectorAll("[data-del]").forEach(b => b.addEventListener("click", async () => { if (!confirm("删除这餐?")) return; await safe(() => dbDel("meals", b.dataset.del)); toast("已删除"); renderFood(); })); }
     Lst.querySelectorAll("[data-edit]").forEach(x => x.addEventListener("click", () => {
       const mm = S.meals.find(y => y.id === x.dataset.edit); if (mm) openMealEdit(mm);
     }));
@@ -1177,14 +1177,24 @@ async function runEstimate(auto) {
   const prompt = `你是营养师,估算这一餐。宁可高估热量、低估蛋白。
 ${S.photoBlob ? "有照片,按照片判断种类和份量。照片是包装上的营养成分表就直接读表上的数字。" : ""}${txt ? "文字:「" + txt + "」。文字写了份量/品牌/营养成分就以文字为准。" : ""}
 要点:认得出的连锁品牌用官方数值并计入附带的酱料黄油;餐厅版比家常菜热量+25%脂肪+40%;中式炒菜单独算烹调油一盘15-25ml;含热量的饮料要算进去。
+有几道菜就拆成几条,每条是桌上那道菜的**整份**份量(先别管几个人分)。最多 8 条。
 只返回这个 JSON,不要任何别的字:
-{"kcal":0,"protein":0,"carbs":0,"fat":0,"name":"这一餐叫什么,只要品名/菜名,不要写营养数字,16字内","note":"15字内,最大的不确定项"}
-数字取整。`;
+{"items":[{"n":"菜名12字内","kcal":0,"p":0,"c":0,"f":0}],"share":false,"note":"15字内,最大的不确定项"}
+share:看起来像一桌菜/餐厅整份/明显不止一人份就填 true,单人份填 false。
+数字取整,字段名照抄别改。`;
   try { const opts = { modelTier: "default", cache: false }; if (S.photoBlob) opts.images = S.photoBlob; const r = await sample.json(prompt, opts); if (!r || typeof r !== "object") throw { code: "invalid_json" };
-    el("mKcal").value = r0(r.kcal || 0); el("mP").value = r0(r.protein || 0); el("mC").value = r0(r.carbs || 0); el("mF").value = r0(r.fat || 0);
-    el("aiItems").innerHTML = "";
-    S.aiRange = r.note || ""; st.textContent = r.note || ""; if (r.name) S.mealName = String(r.name).slice(0, 24); S.aiUsed = true; st.className = "status";
-    if (auto) { const okAuto = await saveMealNow(true); if (okAuto) st.textContent = `已记 ${r0(r.kcal_high || r.kcal || 0)} kcal · 点上面那条可以改`; }
+    let items = Array.isArray(r.items) ? r.items.filter(x => x && (x.kcal || x.p)).slice(0, 8) : [];
+    if (!items.length) items = [{ n: r.name || shortName(txt) || "这一餐", kcal: r.kcal || 0, p: r.protein || 0, c: r.carbs || 0, f: r.fat || 0 }];
+    const tot = items.reduce((a, x) => a + (+x.kcal || 0), 0);
+    S.pending = { items, raw: txt, photo: S.photoDataUrl, note: r.note || "" };
+    st.className = "status";
+    el("aiItems").innerHTML = items.map(x => `<div><span>${esc(x.n || "")}</span><span class="num">${r0(x.kcal || 0)} kcal · P${r0(x.p || 0)}</span></div>`).join("");
+    S.aiUsed = true;
+    const askShare = r.share === true || items.length >= 3 || tot >= 1000;
+    if (auto && askShare) { askPortion(tot, items.length, r.note || ""); return; }
+    if (auto) { const k = await commitPending(1); if (k) st.textContent = `已记 ${r0(tot)} kcal · 点上面那条可以改`; return; }
+    st.textContent = r.note || "";
+    el("mKcal").value = r0(tot); el("mP").value = r0(items.reduce((a, x) => a + (+x.p || 0), 0)); el("mC").value = r0(items.reduce((a, x) => a + (+x.c || 0), 0)); el("mF").value = r0(items.reduce((a, x) => a + (+x.f || 0), 0)); S.mealName = items.length === 1 ? items[0].n : "";
   } catch (e) {
     console.error("[估算失败]", e);
     const code = (e && e.code) || "unknown";
@@ -1229,6 +1239,41 @@ function openMealEdit(m) {
     const ok = await safe(() => dbDel("meals", m.id), "删除失败");
     if (ok !== FAIL) { closeSheet(); toast("已删"); S.quickBuilt = false; renderFood(); }
   });
+}
+function askPortion(tot, cnt, note) {
+  const st = el("aiStatus"); st.className = "status";
+  st.innerHTML = `<div style="width:100%">
+    <div style="font-weight:600;color:var(--ink);margin-bottom:2px">${cnt > 1 ? cnt + " 道菜,共 " : ""}${r0(tot)} kcal${note ? " · " + esc(note) : ""}</div>
+    <div class="mini" style="margin-bottom:7px">这些是你一个人吃的,还是几个人分?</div>
+    <div class="chips" style="padding:0">${[1, 2, 3, 4].map(k => `<button class="chip sm" data-share="${k}">${k === 1 ? "我一个人" : k + " 人分"}</button>`).join("")}
+      <button class="chip sm" data-share="ask">其他</button></div></div>`;
+  st.querySelectorAll("[data-share]").forEach(b => b.addEventListener("click", async () => {
+    let k = b.dataset.share;
+    if (k === "ask") { const v = prompt("几个人分这些菜?", "5"); k = Math.max(1, Math.min(20, parseInt(v, 10) || 1)); }
+    st.innerHTML = ""; st.textContent = "记着…";
+    const ok = await commitPending(+k);
+    st.textContent = ok ? `已记 ${r0(tot / +k)} kcal${+k > 1 ? `(总量 ${r0(tot)} ÷ ${k} 人)` : ""} · 点上面那条可以改` : "";
+  }));
+}
+async function commitPending(div) {
+  const P = S.pending; if (!P || !P.items.length) return false;
+  const d = Math.max(1, +div || 1); const now = new Date();
+  const time = String(now.getHours()).padStart(2, "0") + ":" + String(now.getMinutes()).padStart(2, "0");
+  let okAll = true;
+  for (let i = 0; i < P.items.length; i++) {
+    const x = P.items[i];
+    // AI 给的菜名本来就短且干净,不要再过缩名(会把「米饭 4 碗」切成「米饭」)
+    const nm = String(x.n || "这一餐").trim().slice(0, 24) || "这一餐";
+    const doc = { date: S.foodDate, time, text: nm, raw: P.raw || null,
+      kcal: r0((+x.kcal || 0) / d), protein: r0((+x.p || 0) / d), carbs: r0((+x.c || 0) / d), fat: r0((+x.f || 0) / d),
+      photo: i === 0 ? (P.photo || null) : null, source: "ai", range: d > 1 ? `${d} 人分` : (P.note || null), createdAt: Date.now() + i };
+    const ok = await safe(() => dbSet("meals", uid(), doc), "保存失败");
+    if (ok === FAIL) okAll = false;
+  }
+  ["mealText", "mKcal", "mP", "mC", "mF"].forEach(k => { const e = el(k); if (e) e.value = ""; });
+  el("aiItems").innerHTML = ""; el("manualBox").hidden = true;
+  S.photoBlob = null; S.photoDataUrl = null; S.aiUsed = false; S.aiRange = ""; S.mealName = ""; S.pending = null; S.quickBuilt = false;
+  await renderFood(); return okAll;
 }
 async function saveMealNow(auto) {
   const text = el("mealText").value.trim(); const kcal = num(el("mKcal").value), protein = num(el("mP").value), carbs = num(el("mC").value), fat = num(el("mF").value);
