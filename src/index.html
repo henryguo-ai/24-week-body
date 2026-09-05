@@ -310,7 +310,7 @@ details.sub summary::-webkit-details-marker{display:none}
       <div class="stack" style="margin-top:6px">
         <textarea id="mealText" rows="2" placeholder="吃了什么?一句话就行。或者直接拍照。"></textarea>
         <div class="row">
-          <label class="btn primary" style="flex:1">📷 拍照记录<input type="file" id="mealPhoto" accept="image/*" capture="environment" hidden></label>
+          <label class="btn primary" style="flex:1" id="photoBtn">📷 拍照记录<input type="file" id="mealPhoto" accept="image/*" capture="environment" hidden></label>
           <button class="btn" style="flex:1" id="aiBtn">记这一笔</button>
         </div>
         <div class="status" id="aiStatus"></div>
@@ -1087,7 +1087,12 @@ renderQuick();
 function wireQuick() {
   el("quick").querySelectorAll("[data-q]").forEach(b => b.addEventListener("click", async () => { const q = QUICK[+b.dataset.q]; const now = new Date(); const doc = { date: S.foodDate, time: String(now.getHours()).padStart(2, "0") + ":" + String(now.getMinutes()).padStart(2, "0"), text: q[0].replace(" ⚠", ""), kcal: q[1], protein: q[2], carbs: q[3], fat: q[4], photo: null, source: "quick", createdAt: Date.now() }; const ok = await safe(() => dbSet("meals", uid(), doc), "保存失败"); if (ok !== FAIL) { toast("已记 " + q[0]); renderFood(); } }));
 }
+function syncPhotoBtn() {
+  const pb = el("photoBtn"); if (!pb) return;
+  pb.firstChild.textContent = (sample && !canImage) ? "📷 拍照存档" : "📷 拍照记录";
+}
 async function renderFood() {
+  syncPhotoBtn();
   el("foodDate").textContent = S.foodDate === todayStr() ? "今天 · " + fmtDate(S.foodDate) : fmtDate(S.foodDate);
   const T = nutritionFor(weekNo(S.foodDate));
   { const a = Math.round(T.kcal * 0.21 / 25) * 25, b = Math.round((T.kcal - 2 * a - 200) / 50) * 50;
@@ -1131,8 +1136,19 @@ function renderHabits() {
 el("mealPhoto").addEventListener("change", async e => {
   const f = e.target.files && e.target.files[0]; if (!f) return; el("aiStatus").textContent = "处理照片…";
   try { const { blob, dataUrl } = await compressImage(f, 900, 0.72); S.photoBlob = blob; S.photoDataUrl = dataUrl;
+    if (sample && !canImage) {   // 开机那次可能失败或太早,再问一次(纯本地,不花额度)
+      const lim2 = await sample.limits().catch(() => null);
+      canImage = !!(lim2 && lim2.images);
+      if (canImage && lim2.images.mediaTypes && lim2.images.mediaTypes.length) el("mealPhoto").accept = lim2.images.mediaTypes.join(",");
+      console.info("[sample] 复查图片能力:", canImage, lim2);
+      syncPhotoBtn();
+    }
     if (sample && canImage) { runEstimate(true); }
-    else if (sample) { el("aiStatus").className = "status"; el("aiStatus").textContent = "这个页面没法把图片发给 AI。照片已存 —— 在上面写一句是什么(包装上的热量和蛋白直接抄过来),再点「记这一笔」"; el("mealText").focus(); }
+    else if (sample) {
+      el("aiStatus").className = "status";
+      el("aiStatus").innerHTML = `<div style="width:100%"><div style="color:var(--ink);font-weight:600">照片存好了,但这个页面不能把图片发给 AI</div><div class="mini" style="margin-top:4px;line-height:1.6">把包装上的数字抄一句到上面那个框,再点「记这一笔」就行,比如:<br><span style="color:var(--ink2)">蛋白棒 150 cal 28g protein</span><br>数字它读得出来,不用 AI 也能记上。</div></div>`;
+      el("mealText").focus();
+    }
     else { el("manualBox").hidden = false; el("aiStatus").textContent = "照片已存,数字自己填一下"; } }
   catch (err) { console.error(err); el("aiStatus").textContent = "照片读取失败,换一张试试"; }
   e.target.value = "";
@@ -1727,7 +1743,7 @@ async function boot() {
         console.info("[plan] db 里是 v" + p.version + ",代码里 v" + DEFAULT_PLAN.version + " 更新,用代码里的");
       }
     }
-    window.claude.use("sample").then(async s => { if (!s) return; sample = s; const lim = await s.limits().catch(() => null); canImage = !!(lim && lim.images); el("aiBtn").hidden = false; if (canImage && lim.images.mediaTypes && lim.images.mediaTypes.length) el("mealPhoto").accept = lim.images.mediaTypes.join(","); }).catch(() => { });
+    window.claude.use("sample").then(async s => { if (!s) return; sample = s; const lim = await s.limits().catch(e => { console.warn("[sample.limits 失败]", e); return null; }); canImage = !!(lim && lim.images); console.info("[sample] 图片能力:", canImage, "limits:", lim); el("aiBtn").hidden = false; if (canImage && lim.images.mediaTypes && lim.images.mediaTypes.length) el("mealPhoto").accept = lim.images.mediaTypes.join(","); }).catch(() => { });
   } else { setSync("local", "本机"); el("dbBanner").hidden = false; }
   const wts = await safe(() => dbGet("config", "weights")); if (wts && wts !== FAIL) S.weights = wts;
   await loadBody(); await loadWorkouts();
