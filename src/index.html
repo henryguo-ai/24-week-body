@@ -476,7 +476,7 @@ const MOBILITY = {
 /* ⚠️ 下面这个 DEFAULT_PLAN 是【虚构示例人】的数据,不是任何真实用户的。
    生成新计划时整个替换掉。绝对不要拿这里的数字去问用户「你的目标是不是体脂 15%」—— 他没说过。 */
 const DEFAULT_PLAN = {
-  version: 12, updatedAt: "2026-09-01", startDate: "2026-09-01",
+  version: 13, updatedAt: "2026-09-06", startDate: "2026-09-01",
   pattern: ["U1", "L", "cardio", "U2", "cardio", "U3", "rest"],
   events: [{ week: 1, label: "开始" }, { week: 19, label: "15% 目标区" }, { week: 24, label: "结束 · 转增肌" }],
   warmup: { common: "每天前 5 项一样,是给骨盆前倾和前伸头的每日剂量;后面 2 项按当天练的部位换。", U1: [MOBILITY.bike, MOBILITY.breath, MOBILITY.openbook, MOBILITY.wallangel, MOBILITY.chin, MOBILITY.bandrot, MOBILITY.facepull_w], U2: [MOBILITY.bike, MOBILITY.breath, MOBILITY.openbook, MOBILITY.wallangel, MOBILITY.chin, MOBILITY.pullapart, MOBILITY.scaphang], U3: [MOBILITY.bike, MOBILITY.breath, MOBILITY.openbook, MOBILITY.wallangel, MOBILITY.chin, MOBILITY.bandrot, MOBILITY.armpump], L: [MOBILITY.bike, MOBILITY.breath, MOBILITY.hipflex, MOBILITY.deadbug, MOBILITY.bandwalk, MOBILITY.airsquat], ramp: "第一个复合动作先做 2 组热身组:50% 重量 × 8 次,70% × 4 次,再上工作重量。热身组不要填进 app。" },
@@ -1600,7 +1600,16 @@ async function boot() {
   if (hasClaude) {
     db = await window.claude.use("db").catch(() => null);
     if (db) { mode = "db"; setSync("on", "已同步"); } else { mode = "local"; setSync("local", "本机"); el("dbBanner").hidden = false; }
-    if (db) { const p = await safe(() => dbGet("config", "plan")); if (p && p !== FAIL && p.days && p.order && p.version >= DEFAULT_PLAN.version) PLAN = p; }
+    if (db) {
+      const p = await safe(() => dbGet("config", "plan"));
+      // 版本严格大于代码里的才用存的那份(教练后来推过新计划)。
+      // 相等时用代码里的 —— 否则改了 DEFAULT_PLAN 却忘了 +1 version,存的旧计划会一直把新的顶掉。
+      if (p && p !== FAIL && p.days && p.order && p.version > DEFAULT_PLAN.version) {
+        PLAN = p; console.info("[plan] 用 db 里的 v" + p.version + "(代码里是 v" + DEFAULT_PLAN.version + ")");
+      } else if (p && p !== FAIL && p.version != null && p.version < DEFAULT_PLAN.version) {
+        console.info("[plan] db 里是 v" + p.version + ",代码里 v" + DEFAULT_PLAN.version + " 更新,用代码里的");
+      }
+    }
     window.claude.use("sample").then(async s => { if (!s) return; sample = s; const lim = await s.limits().catch(() => null); canImage = !!(lim && lim.images); el("aiBtn").hidden = false; if (canImage && lim.images.mediaTypes && lim.images.mediaTypes.length) el("mealPhoto").accept = lim.images.mediaTypes.join(","); }).catch(() => { });
   } else { setSync("local", "本机"); el("dbBanner").hidden = false; }
   const wts = await safe(() => dbGet("config", "weights")); if (wts && wts !== FAIL) S.weights = wts;
