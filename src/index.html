@@ -236,12 +236,27 @@ details.sub summary::-webkit-details-marker{display:none}
 .dbar{display:grid;grid-template-columns:64px 1fr 64px;gap:8px;align-items:center;font-size:13px;padding:6px 0}
 .dbar .track{height:14px;border-radius:7px;background:var(--surface2);position:relative;overflow:hidden}
 .dbar .track i{position:absolute;top:0;bottom:0;border-radius:7px}
+.flame{display:inline-block;width:.72em;height:.95em;vertical-align:-.09em;margin-right:1px}
+.flame svg{width:100%;height:100%;display:block;transform-origin:50% 92%;animation:flick 2.6s ease-in-out infinite}
+.flame .o{fill:var(--fo)}
+.flame .i{fill:var(--fi);opacity:0}
+.flame.t1{--fo:#d99a45;--fi:#fff}
+.flame.t2{--fo:#ef7d1e;--fi:#ffd489}
+.flame.t3{--fo:#f2570a;--fi:#ffd06a}
+.flame.t4{--fo:#ff3a00;--fi:#fff3ad}
+.flame.t2 .i,.flame.t3 .i,.flame.t4 .i{opacity:1}
+.flame.t2 svg{animation-duration:2s}
+.flame.t3 svg{animation-duration:1.5s}
+.flame.t4 svg{animation-duration:1.05s}
+.flame.t3{filter:drop-shadow(0 0 3px rgba(255,110,0,.5))}
+.flame.t4{filter:drop-shadow(0 0 6px rgba(255,70,0,.65))}
+@keyframes flick{0%,100%{transform:scale(1,1) skewX(0)}22%{transform:scale(1.07,.96) skewX(-2.5deg)}48%{transform:scale(.96,1.06) skewX(1.5deg)}74%{transform:scale(1.05,.99) skewX(2.5deg)}}
 #flash{position:fixed;inset:0;background:var(--accent);opacity:0;pointer-events:none;z-index:95}
 #flash.go{animation:restflash 1.2s ease-out}
 @keyframes restflash{0%{opacity:0}10%{opacity:.5}35%{opacity:0}55%{opacity:.45}80%{opacity:0}100%{opacity:0}}
 .timer.ring{animation:ringpulse 1.2s ease-out}
 @keyframes ringpulse{0%,100%{transform:scale(1)}20%{transform:scale(1.14)}45%{transform:scale(1)}65%{transform:scale(1.1)}}
-@media (prefers-reduced-motion: reduce){*{transition:none!important}#flash.go{animation:none;opacity:.35}.timer.ring{animation:none}}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}#flash.go{animation:none;opacity:.35}.timer.ring{animation:none}.flame svg{animation:none}}
 </style>
 
 <div class="wrap">
@@ -787,6 +802,14 @@ function buildWorkout(dayKey) {
   }) };
 }
 function streak() { const dates = new Set(S.workouts.map(w => w.date)); let n = 0, d = todayStr(); if (!dates.has(d)) d = addDays(d, -1); while (dates.has(d) || (n > 0 && plannedKey(d) && !PLAN.order.includes(plannedKey(d)))) { if (dates.has(d)) n++; d = addDays(d, -1); if (n > 400) break; } return n; }
+function flameTier(n) { return n >= 12 ? 4 : n >= 6 ? 3 : n >= 3 ? 2 : n >= 1 ? 1 : 0; }
+function flameSvg(n) {
+  const t = flameTier(n); if (!t) return "";
+  return `<span class="flame t${t}" aria-hidden="true"><svg viewBox="0 0 24 32">`
+    + `<path class="o" d="M12.4 1.2c.6 5.6 6.6 8 6.6 14.6a7 7 0 0 1-14 0c0-3.8 2.4-5.9 3.6-8.6.9 1.7 1.8 2.5 2.6 2.5 1-2.7-.8-5.6 1.2-8.5z"/>`
+    + (t >= 2 ? `<path class="i" d="M12.2 14.6c.4 2.6 3 3.4 3 6.4a3.4 3.4 0 0 1-6.8 0c0-2.3 2-3.2 3.8-6.4z"/>` : "")
+    + `</svg></span>`;
+}
 function renderStats() {
   const w = weekNo(); const nd = nextDayKey(); const todayKey = plannedFor(todayStr()).key;
   const nextDeload = (PLAN.deloadWeeks || []).find(k => k >= w); const daysToDeload = nextDeload ? Math.max(0, dayDiff(todayStr(), addDays(PLAN.startDate, (nextDeload - 1) * 7))) : null;
@@ -799,7 +822,7 @@ function renderStats() {
   const stk = streak();
   el("stats").innerHTML = `
     <div><div class="k">今天</div><div class="v">${todayKey && todayKey !== "rest" ? DAY_LBL[todayKey] : "休息"}</div></div>
-    <div><div class="k">连续</div><div class="v">${stk > 0 ? stk + "<small> 次</small>" : "<small style=\"font-size:13px\">从今天起</small>"}</div></div>
+    <div><div class="k">连续</div><div class="v">${stk > 0 ? flameSvg(stk) + stk + "<small> 次</small>" : "<small style=\"font-size:13px\">从今天起</small>"}</div></div>
     <div><div class="k">本周训练</div><div class="v">${doneThisWeek}<small>/${Math.max(1, (PLAN.order || []).length)}</small></div></div>
     <div><div class="k">离目标</div><div class="v">${toGo != null ? toGo.toFixed(1) + "<small> kg</small>" : Math.max(0, w) + "<small>/24 周</small>"}</div></div>`;
   let pills = ""; if (w < 1) pills += `${PLAN.startDate.slice(5).replace("-", "/")} 开始 · `; if ((PLAN.deloadWeeks || []).includes(w)) pills += `轻量周:组数减半,重量不变 · `; if ((PLAN.dietBreakWeeks || []).includes(w)) pills += `恢复周:吃 ${nut.kcal} · `;
