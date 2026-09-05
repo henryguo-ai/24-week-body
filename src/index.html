@@ -73,6 +73,17 @@ a{color:var(--accent)}
 .stats .v{font-family:"Barlow Condensed",system-ui,sans-serif;font-size:20px;font-weight:700;line-height:1.15}
 .stats .v small{font-size:12px;color:var(--ink3);font-weight:500}
 .ex{padding:12px 0}
+.exwrap{border-top:1px solid var(--line)}
+.exwrap:first-of-type{border-top:0}
+.exwrap>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:10px;padding:13px 0}
+.exwrap>summary::-webkit-details-marker{display:none}
+.exwrap>summary .t{flex:1;font-weight:600;min-width:0}
+.exwrap>summary .t small{display:block;font-weight:500;color:var(--ink3);font-size:12px;margin-top:1px}
+.exwrap>summary .st{flex:0 0 auto;font-family:"Barlow Condensed",system-ui,sans-serif;font-weight:700;font-size:14px;color:var(--ink2);padding:4px 11px;border-radius:999px;background:var(--surface2)}
+.exwrap>summary .st.ok{background:var(--good);color:#fff}
+.exwrap[open]>summary .t small{color:var(--accent)}
+.exwrap .ex{padding-top:2px}
+.allsets{width:100%;margin:2px 0 6px}
 .ex + .ex{border-top:1px solid var(--line)}
 .ex .hd{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:4px}
 .ex .hd .t{font-weight:600}
@@ -781,6 +792,13 @@ function renderDayChips() {
   el("dayChips").innerHTML = keys.map(k => { const ld = lastOf(k); return `<button class="chip ${S.day === k ? "on" : ""}" data-k="${k}" style="text-align:left;line-height:1.15">${DAY_CHIP[k] || k}${k === rec ? " · 建议" : ""}<small style="display:block;font-size:11px;font-weight:500;opacity:.8">${ld ? "上次 " + ld : "还没练过"}</small></button>`; }).join("");
   el("dayChips").querySelectorAll(".chip").forEach(c => c.addEventListener("click", () => { S.day = c.dataset.k; S.workout = buildWorkout(S.day); renderDayChips(); renderWorkout(); }));
 }
+function topReps(ex) { const m = String(ex.rep || ex.target || "").match(/(\d+)\s*$/); return m ? +m[1] : null; }
+function syncExSummary(card, i, ex) {
+  const node = card.querySelector(`.ex[data-i="${i}"]`); const wrap = node && node.closest(".exwrap");
+  if (!wrap) return; const st = wrap.querySelector("summary .st"); if (!st) return;
+  const d = ex.sets.filter(x => x.done).length;
+  st.textContent = `${d}/${ex.sets.length}`; st.classList.toggle("ok", d === ex.sets.length && ex.sets.length > 0);
+}
 function renderWorkout() {
   const w = S.workout; const day = PLAN.days[w.day];
   const wu = PLAN.warmup || {}, st = PLAN.stretch || {}; const isLower = w.day === "L"; const isCardio = w.day === "cardio";
@@ -796,7 +814,14 @@ function renderWorkout() {
     if (cur && cur.alias) tag += `<span class="tag sub">${esc(cur.alias)}</span>`;
     if (recent && cur.note && /加到/.test(cur.note)) tag += `<span class="tag up">${esc(cur.note)}</span>`; else if (recent && cur.note && /降/.test(cur.note)) tag += `<span class="tag down">${esc(cur.note)}</span>`;
     const unit = ex.type === "db" ? "lb/手" : ex.type === "bw" ? "外挂/辅助 lb" : "lb";
-    h += `<div class="ex" data-i="${i}">
+    const doneN = ex.sets.filter(x => x.done).length, allN = ex.sets.length;
+    h += `<details class="exwrap"${ex.cardio ? " open" : ""}>
+      <summary>
+        <div class="thumb" style="width:56px;height:40px;flex:0 0 56px;border-radius:8px">${def ? illus(def, true) : ""}</div>
+        <span class="t">${esc(ex.n)}<small>${esc(ex.target)}${ex.cardio ? "" : ` · ${cur ? cur.w : (def && def.start != null ? def.start : "--")} ${unit}`}</small></span>
+        <span class="st ${doneN === allN && allN ? "ok" : ""}">${doneN}/${allN}</span>
+      </summary>
+      <div class="ex" data-i="${i}">
       <div class="exrow">
         <div class="thumb" data-open="${esc(ex.n)}" title="看示范">${def ? illus(def, true) : ""}</div>
         <div class="exmeta">
@@ -805,17 +830,19 @@ function renderWorkout() {
           ${lastTxt ? `<div class="mini">${lastTxt}</div>` : ""}
         </div>
       </div>
+      ${ex.cardio ? "" : `<button class="btn sm allsets" data-allsets="${i}">全都做到了 · ${esc(ex.target)}</button>`}
       <div class="sets">
         <span></span><span class="lbl">${ex.cardio ? "距离/圈" : unit.toUpperCase()}</span><span></span><span class="lbl">${ex.cardio ? "分钟" : "次数"}</span><span></span>
         ${ex.sets.map((s, j) => `
           <span class="n">${j + 1}</span>
           <input type="number" inputmode="decimal" step="${ex.cardio ? "1" : "2.5"}" value="${esc(s.w)}" data-i="${i}" data-j="${j}" data-f="w" placeholder="${ex.cardio ? "-" : "lb"}">
           <span class="x">×</span>
-          <input type="number" inputmode="numeric" value="${esc(s.r)}" data-i="${i}" data-j="${j}" data-f="r" placeholder="${s.ph !== "" && s.ph != null ? "上次 " + s.ph : (ex.cardio ? "min" : "次")}">
+          <input type="number" inputmode="numeric" value="${esc(s.r)}" data-i="${i}" data-j="${j}" data-f="r" placeholder="${ex.cardio ? "min" : (topReps(ex) || (s.ph !== "" && s.ph != null ? s.ph : "次"))}">
           <button class="done ${s.done ? "on" : ""}" data-i="${i}" data-j="${j}" aria-label="完成第${j + 1}组">✓</button>`).join("")}
       </div>
       ${ex.cardio ? "" : `<div class="rir" id="rir-${i}"><span>最后一组做完,还能再做几次?</span>${[0, 1, 2, 3].map(v => `<button data-rir="${v}" data-i="${i}" class="${ex.rir === v ? "on" : ""}">${v === 0 ? "做不动了" : v === 3 ? "3 次以上" : v + " 次"}</button>`).join("")}</div>`}
-    </div>`;
+      </div>
+    </details>`;
   });
   if (!isCardio) h += `<details class="sub" style="margin-top:8px"><summary><span>拉伸 · 5 分钟 · 练完做</span><span class="faint">${w.str.length}/${stList.length}</span></summary><ul class="wlist">${stList.map((m, i) => mobRow(m, "data-str", i, w.str.includes(i))).join("")}</ul></details>`;
   h += `<div style="margin-top:12px"><input id="wNotes" placeholder="备注:状态、疼痛、下次要改的" value="${esc(w.notes)}"></div>`;
@@ -823,13 +850,25 @@ function renderWorkout() {
   card.querySelectorAll("[data-warm]").forEach(li => li.addEventListener("click", ev => { if (ev.target.closest("[data-open]")) return; const i = +li.dataset.warm; const k = w.warm.indexOf(i); k >= 0 ? w.warm.splice(k, 1) : w.warm.push(i); li.classList.toggle("on", k < 0); li.closest("details").querySelector("summary .faint").textContent = `${w.warm.length}/${wuList.length}`; }));
   card.querySelectorAll("[data-str]").forEach(li => li.addEventListener("click", ev => { if (ev.target.closest("[data-open]")) return; const i = +li.dataset.str; const k = w.str.indexOf(i); k >= 0 ? w.str.splice(k, 1) : w.str.push(i); li.classList.toggle("on", k < 0); li.closest("details").querySelector("summary .faint").textContent = `${w.str.length}/${stList.length}`; }));
   card.querySelectorAll("input[data-f]").forEach(inp => inp.addEventListener("input", () => { w.exercises[inp.dataset.i].sets[inp.dataset.j][inp.dataset.f] = inp.value; }));
-  card.querySelectorAll("[data-open]").forEach(t => t.addEventListener("click", () => showExercise(t.dataset.open)));
+  card.querySelectorAll("[data-open]").forEach(t => t.addEventListener("click", ev => { ev.preventDefault(); ev.stopPropagation(); showExercise(t.dataset.open); }));
   card.querySelectorAll("[data-rir]").forEach(b => b.addEventListener("click", () => { const ex = w.exercises[b.dataset.i]; ex.rir = +b.dataset.rir; card.querySelectorAll(`[data-rir][data-i="${b.dataset.i}"]`).forEach(x => x.classList.toggle("on", +x.dataset.rir === ex.rir)); el("rir-" + b.dataset.i).classList.remove("miss"); }));
   card.querySelectorAll(".done").forEach(b => b.addEventListener("click", () => {
     const ex = w.exercises[b.dataset.i]; const s = ex.sets[b.dataset.j]; s.done = !s.done; b.classList.toggle("on", s.done);
+    if (s.done && (s.r === "" || s.r == null) && !ex.cardio) { const t = topReps(ex); if (t) { s.r = String(t); const ri = card.querySelector(`input[data-i="${b.dataset.i}"][data-j="${b.dataset.j}"][data-f="r"]`); if (ri) ri.value = s.r; } }
+    syncExSummary(card, b.dataset.i, ex);
     if (s.done && ex.rest && !ex.cardio) startTimer(ex.rest);
     const nx = ex.sets[+b.dataset.j + 1];
     if (s.done && nx && (nx.w === "" || nx.w === null) && s.w !== "") { nx.w = s.w; const ni = card.querySelector(`input[data-i="${b.dataset.i}"][data-j="${+b.dataset.j + 1}"][data-f="w"]`); if (ni) ni.value = s.w; }
+  }));
+  card.querySelectorAll("[data-allsets]").forEach(b => b.addEventListener("click", ev => {
+    ev.preventDefault(); const i = b.dataset.allsets, ex = w.exercises[i], t = topReps(ex);
+    ex.sets.forEach((s, j) => {
+      s.done = true; if ((s.r === "" || s.r == null) && t) s.r = String(t);
+      const db = card.querySelector(`.done[data-i="${i}"][data-j="${j}"]`); if (db) db.classList.add("on");
+      const ri = card.querySelector(`input[data-i="${i}"][data-j="${j}"][data-f="r"]`); if (ri) ri.value = s.r;
+    });
+    syncExSummary(card, i, ex);
+    const rr = el("rir-" + i); if (rr) rr.scrollIntoView({ block: "center", behavior: "smooth" });
   }));
   el("wNotes").addEventListener("input", e => w.notes = e.target.value);
   tickDur();
