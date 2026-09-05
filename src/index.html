@@ -1,4 +1,4 @@
-<title>泳者计划</title>
+<title>24 周</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&display=swap">
 <style>
 :root{
@@ -739,7 +739,7 @@ async function checkSubstitute(e, ex) {
 async function setWeight(name, w, note) { const prev = S.weights[name] || {}; S.weights[name] = { ...prev, w, updatedAt: new Date().toISOString(), note: note || "" }; const ok = await safe(() => dbSet("config", "weights", { ...S.weights }), "保存重量失败"); return ok !== FAIL; }
 
 /* ======================= TRAIN ======================= */
-function nextDayKey() { const order = PLAN.order; const lastLift = S.workouts.find(w => order.includes(w.day)); if (!lastLift) return order[0]; const i = order.indexOf(lastLift.day); return order[(i + 1) % order.length]; }
+function nextDayKey() { const order = PLAN.order || []; if (!order.length) return "cardio"; const lastLift = S.workouts.find(w => order.includes(w.day)); if (!lastLift) return order[0]; const i = order.indexOf(lastLift.day); return order[(i + 1) % order.length]; }
 function buildWorkout(dayKey) {
   const day = PLAN.days[dayKey]; const w = weekNo();
   return { id: uid(), date: todayStr(), day: dayKey, dayName: day.name, startedAt: Date.now(), notes: "", week: w, warm: [], str: [], exercises: day.ex.map(e => {
