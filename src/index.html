@@ -1130,7 +1130,10 @@ function renderHabits() {
 }
 el("mealPhoto").addEventListener("change", async e => {
   const f = e.target.files && e.target.files[0]; if (!f) return; el("aiStatus").textContent = "处理照片…";
-  try { const { blob, dataUrl } = await compressImage(f, 900, 0.72); S.photoBlob = blob; S.photoDataUrl = dataUrl; if (sample && canImage) { runEstimate(true); } else { el("manualBox").hidden = false; el("aiStatus").textContent = "照片已存,数字自己填一下"; } }
+  try { const { blob, dataUrl } = await compressImage(f, 900, 0.72); S.photoBlob = blob; S.photoDataUrl = dataUrl;
+    if (sample && canImage) { runEstimate(true); }
+    else if (sample) { el("aiStatus").className = "status"; el("aiStatus").textContent = "这个页面没法把图片发给 AI。照片已存 —— 在上面写一句是什么(包装上的热量和蛋白直接抄过来),再点「记这一笔」"; el("mealText").focus(); }
+    else { el("manualBox").hidden = false; el("aiStatus").textContent = "照片已存,数字自己填一下"; } }
   catch (err) { console.error(err); el("aiStatus").textContent = "照片读取失败,换一张试试"; }
   e.target.value = "";
 });
@@ -1140,26 +1143,50 @@ function compressImage(file, maxSide, q) {
     img.onerror = () => { URL.revokeObjectURL(url); rej(new Error("decode")); }; img.src = url; });
 }
 el("aiBtn").addEventListener("click", () => runEstimate(true));
+function parseMacrosFromText(t) {
+  if (!t) return null; const s0 = String(t);
+  const G = re => { const m = s0.match(re); return m ? Math.round(+m[1]) : null; };
+  const kcal = G(/(\d{2,4})\s*(?:kcal|cal(?:ories)?\b)/i) ?? G(/cal(?:ories)?\s*[:：]?\s*(\d{2,4})/i) ?? G(/(\d{2,4})\s*(?:大?卡|千卡)/) ?? G(/热量\s*[:：]?\s*(\d{2,4})/);
+  // 中英文都要求数字后面跟 g,否则「蛋白棒 热量190」会被读成蛋白 190
+  const protein = G(/(\d{1,3})\s*g\s*(?:of\s*)?protein/i) ?? G(/protein\s*[:：]?\s*(\d{1,3})\s*g/i) ?? G(/蛋白[质]?\s*[:：]?\s*(\d{1,3})\s*g/);
+  const carbs = G(/(\d{1,3})\s*g\s*(?:of\s*)?(?:carb|carbohydrate)/i) ?? G(/(?:carb|carbohydrate)s?\s*[:：]?\s*(\d{1,3})\s*g/i) ?? G(/碳水(?:化合物)?\s*[:：]?\s*(\d{1,3})\s*g/);
+  const fat = G(/(\d{1,3})\s*g\s*(?:of\s*)?fat/i) ?? G(/fat\s*[:：]?\s*(\d{1,3})\s*g/i) ?? G(/脂肪\s*[:：]?\s*(\d{1,3})\s*g/);
+  if (kcal == null && protein == null) return null;
+  return { kcal: kcal || 0, protein: protein || 0, carbs: carbs || 0, fat: fat || 0 };
+}
 async function runEstimate(auto) {
   const txt = el("mealText").value.trim();
   if (!sample) { el("manualBox").hidden = false; if (txt || S.photoBlob) toast("AI 估算用不了,自己填数字"); else toast("先写点内容或拍张照"); return; } if (!txt && !S.photoBlob) { toast("先写点内容或拍张照"); return; }
   const st = el("aiStatus"); st.className = "status busy"; st.textContent = "正在看你吃了什么,大概 5-10 秒…"; el("aiBtn").disabled = true; el("mealText").disabled = true; el("aiItems").innerHTML = "";
-  const prompt = `你是给减脂期健身者估算餐食的营养师。宁可高估热量、低估蛋白,绝不美化。
-${S.photoBlob ? "有照片,以照片判断种类和份量;" : ""}${txt ? "文字:「" + txt + "」,文字写了份量或品牌就以文字为准。" : ""}
-规则:
-1 认出美国连锁(Texas Roadhouse / Chipotle / Chick-fil-A / Panda Express / Olive Garden 等)就用该品牌官方菜单数值,并把默认附带的面包、黄油、蘸酱、沙拉酱按全份计入。
-2 餐厅版菜品比同名家常菜按 +25% 热量、+40% 脂肪估。
-3 中式家常菜必须单独列一项"烹调油",一盘炒菜 15-25 ml(135-225 kcal);红烧/糖醋/鱼香另加糖 10-20 g;汤面按 350-500 g 熟面。
-4 所有含热量的饮料单独成项,drink 设 true;美式餐厅一杯甜茶按 22 oz 150-180 kcal,续杯要乘杯数。
-5 份量锚点:成年男性一掌心=熟肉 100-120 g;一拳=熟米饭 180 g;一个大拇指=油或黄油 10 g;标准餐盘直径 27 cm。
-6 看不清或不知道用了多少油,按可见份量的上限估,并在 note 里点名最大的不确定项。
-只返回 JSON:{"items":[{"name":"中文名","grams":0,"kcal":0,"protein":0,"carbs":0,"fat":0,"drink":false}],"kcal":0,"protein":0,"carbs":0,"fat":0,"kcal_low":0,"kcal_high":0,"confidence":"高|中|低","note":"20字内中文"}。所有数字取整。`;
+  const prompt = `你是营养师,估算这一餐。宁可高估热量、低估蛋白。
+${S.photoBlob ? "有照片,按照片判断种类和份量。照片是包装上的营养成分表就直接读表上的数字。" : ""}${txt ? "文字:「" + txt + "」。文字写了份量/品牌/营养成分就以文字为准。" : ""}
+要点:认得出的连锁品牌用官方数值并计入附带的酱料黄油;餐厅版比家常菜热量+25%脂肪+40%;中式炒菜单独算烹调油一盘15-25ml;含热量的饮料要算进去。
+只返回这个 JSON,不要任何别的字:
+{"kcal":0,"protein":0,"carbs":0,"fat":0,"name":"12字内中文菜名","note":"15字内,最大的不确定项"}
+数字取整。`;
   try { const opts = { modelTier: "default", cache: false }; if (S.photoBlob) opts.images = S.photoBlob; const r = await sample.json(prompt, opts); if (!r || typeof r !== "object") throw { code: "invalid_json" };
-    el("mKcal").value = r0(r.kcal_high || r.kcal || 0); el("mP").value = r0(r.protein || 0); el("mC").value = r0(r.carbs || 0); el("mF").value = r0(r.fat || 0);
-    el("aiItems").innerHTML = (r.items || []).map(i => `<div><span>${esc(i.name)} ${i.grams ? "· " + r0(i.grams) + "g" : ""}${i.drink ? " 🥤" : ""}</span><span class="num">${r0(i.kcal || 0)} kcal · P${r0(i.protein || 0)}</span></div>`).join("");
-    S.aiRange = r.kcal_low && r.kcal_high ? `${r0(r.kcal_low)}-${r0(r.kcal_high)} kcal` : ""; st.textContent = `${S.aiRange ? S.aiRange + " · " : ""}把握${r.confidence || "中"}${r.note ? " · " + r.note : ""}`; if (!txt && r.items && r.items.length) el("mealText").value = r.items.map(i => i.name).join(","); S.aiUsed = true; st.className = "status";
+    el("mKcal").value = r0(r.kcal || 0); el("mP").value = r0(r.protein || 0); el("mC").value = r0(r.carbs || 0); el("mF").value = r0(r.fat || 0);
+    el("aiItems").innerHTML = "";
+    S.aiRange = r.note || ""; st.textContent = r.note || ""; if (!txt && r.name) el("mealText").value = r.name; S.aiUsed = true; st.className = "status";
     if (auto) { const okAuto = await saveMealNow(true); if (okAuto) st.textContent = `已记 ${r0(r.kcal_high || r.kcal || 0)} kcal · 点上面那条可以改`; }
-  } catch (e) { console.error(e); st.className = "status err"; const m = { not_granted: "你没有允许这个页面调用 Claude,手动填数字即可", rate_limited: "调用太频繁,稍等再试", image_rejected: "这张照片不行,换一张", invalid_json: "没解析出结果,再点一次", refused: "这条内容没法估算,手动填", sampling_disabled: "这个账号不能用 AI 估算" }; st.textContent = m[e && e.code] || "估算失败,手动填数字"; if (e && (e.code === "not_granted" || e.code === "sampling_disabled")) { sample = null; el("manualBox").hidden = false; } }
+  } catch (e) {
+    console.error("[估算失败]", e);
+    const code = (e && e.code) || "unknown";
+    const local = parseMacrosFromText(txt);
+    if (local) {
+      el("mKcal").value = local.kcal; el("mP").value = local.protein; el("mC").value = local.carbs; el("mF").value = local.fat;
+      S.aiUsed = false; S.aiRange = ""; st.className = "status";
+      st.textContent = "AI 没答上来,我直接读了你写的数字";
+      if (auto) { const ok2 = await saveMealNow(true); if (ok2) st.textContent = `已记 ${local.kcal} kcal（读自你写的文字）· 点上面那条可以改`; }
+      return;
+    }
+    st.className = "status err";
+    const m = { not_granted: "你没允许这个页面调用 Claude", rate_limited: "问得太频繁,等十几秒再试", image_rejected: "这张照片不行,换一张", invalid_json: "AI 回的内容没解析出来", refused: "这条内容它不肯估", sampling_disabled: "这个账号不能用 AI 估算", unavailable: "服务暂时不可用" };
+    st.innerHTML = `${esc(m[code] || "估算失败")} <span class="mini">(${esc(code)})</span> · <button class="btn ghost sm" id="aiRetry" style="padding:2px 8px;min-height:0">再试一次</button>`;
+    const rb = el("aiRetry"); if (rb) rb.addEventListener("click", () => runEstimate(auto));
+    el("manualBox").hidden = false;
+    if (code === "not_granted" || code === "sampling_disabled") sample = null;
+  }
   finally { el("aiBtn").disabled = false; el("mealText").disabled = false; if (st.className.indexOf("busy") >= 0) st.className = "status"; }
 }
 function openMealEdit(m) {
