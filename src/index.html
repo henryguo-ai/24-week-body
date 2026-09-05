@@ -236,7 +236,12 @@ details.sub summary::-webkit-details-marker{display:none}
 .dbar{display:grid;grid-template-columns:64px 1fr 64px;gap:8px;align-items:center;font-size:13px;padding:6px 0}
 .dbar .track{height:14px;border-radius:7px;background:var(--surface2);position:relative;overflow:hidden}
 .dbar .track i{position:absolute;top:0;bottom:0;border-radius:7px}
-@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+#flash{position:fixed;inset:0;background:var(--accent);opacity:0;pointer-events:none;z-index:95}
+#flash.go{animation:restflash 1.2s ease-out}
+@keyframes restflash{0%{opacity:0}10%{opacity:.5}35%{opacity:0}55%{opacity:.45}80%{opacity:0}100%{opacity:0}}
+.timer.ring{animation:ringpulse 1.2s ease-out}
+@keyframes ringpulse{0%,100%{transform:scale(1)}20%{transform:scale(1.14)}45%{transform:scale(1)}65%{transform:scale(1.1)}}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}#flash.go{animation:none;opacity:.35}.timer.ring{animation:none}}
 </style>
 
 <div class="wrap">
@@ -428,6 +433,7 @@ details.sub summary::-webkit-details-marker{display:none}
 </div>
 
 <button class="timer idle" id="timer" hidden><span id="timerTxt">休息</span><small id="timerSub">90s</small></button>
+<div id="flash" aria-hidden="true"></div>
 <div class="toast" id="toast"></div>
 <div class="sheet-bg" id="sheetBg"></div>
 <div class="sheet" id="sheet"></div>
@@ -467,6 +473,8 @@ const MOBILITY = {
   bandwalk: { n: "弹力带侧向走", en: "banded lateral walk", r: "12 步/方向 × 2", feel: "臀部外侧上方(臀中肌)发酸", warn: "脚尖朝前,膝不内扣;上身不晃,半蹲姿势保持", cues: ["弹力带套在膝上方,微蹲,脚尖朝前", "向一侧横着走 12 步,再走回来", "全程带子有张力,两脚别碰到一起", "臀中肌稳骨盆,是深蹲膝盖不内扣和走路不晃的那块肌肉"], pose: ["F", [12, 12, { kneeband: 1 }], [22, 22, { kneeband: 1 }]] },
   breath2: { n: "仰躺呼吸 5 次收尾", en: "90 90 breathing", r: "5 次深呼吸", feel: "腰贴地,腹部随呼气收紧", warn: "不憋气", cues: ["脚踩凳,膝髋 90 度", "鼻吸 4 秒,嘴呼 6 秒"], pose: ["S", [90, 118, -90, 180, 90, 90, 90, { bench: -90, footbench: 1 }], [90, 118, -90, 180, 90, 90, 90, { bench: -90, footbench: 1 }]] }
 };
+/* ⚠️ 下面这个 DEFAULT_PLAN 是【虚构示例人】的数据,不是任何真实用户的。
+   生成新计划时整个替换掉。绝对不要拿这里的数字去问用户「你的目标是不是体脂 15%」—— 他没说过。 */
 const DEFAULT_PLAN = {
   version: 12, updatedAt: "2026-09-01", startDate: "2026-09-01",
   pattern: ["U1", "L", "cardio", "U2", "cardio", "U3", "rest"],
@@ -831,7 +839,7 @@ function renderWorkout() {
     if (recent && cur.note && /加到/.test(cur.note)) tag += `<span class="tag up">${esc(cur.note)}</span>`; else if (recent && cur.note && /降/.test(cur.note)) tag += `<span class="tag down">${esc(cur.note)}</span>`;
     const unit = ex.type === "db" ? "lb/手" : ex.type === "bw" ? "外挂/辅助 lb" : "lb";
     const doneN = ex.sets.filter(x => x.done).length, allN = ex.sets.length;
-    h += `<details class="exwrap"${ex.cardio ? " open" : ""}>
+    h += `<details class="exwrap">
       <summary>
         <div class="thumb" style="width:56px;height:40px;flex:0 0 56px;border-radius:8px">${def ? illus(def, true) : ""}</div>
         <span class="t">${esc(ex.n)}<small>${esc(ex.target)}${ex.cardio ? "" : ` · ${cur ? cur.w : (def && def.start != null ? def.start : "--")} ${unit}`}</small></span>
@@ -990,8 +998,34 @@ function renderHistory() {
     <button class="btn ghost danger" data-del="${w.id}" style="margin-top:4px">删除这条</button></details>`).join("");
   el("workoutHistory").querySelectorAll("[data-del]").forEach(b => b.addEventListener("click", async () => { if (!confirm("删除这次训练记录?")) return; await safe(() => dbDel("workouts", b.dataset.del)); await loadWorkouts(); toast("已删除"); }));
 }
-function startTimer(sec) { S.timerEnd = Date.now() + sec * 1000; clearInterval(S.timerId); S.timerId = setInterval(tickTimer, 250); tickTimer(); }
-function tickTimer() { const t = el("timer"); const left = Math.ceil((S.timerEnd - Date.now()) / 1000); if (left <= 0) { clearInterval(S.timerId); t.classList.add("idle"); el("timerTxt").textContent = "休息"; el("timerSub").textContent = "90s"; if (navigator.vibrate) navigator.vibrate([120, 60, 120]); return; } t.classList.remove("idle"); el("timerTxt").textContent = Math.floor(left / 60) + ":" + String(left % 60).padStart(2, "0"); el("timerSub").textContent = "点一下停止"; }
+let AC = null;
+function unlockAudio() { if (AC) return; try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { AC = null; } }
+["pointerdown", "touchstart", "keydown"].forEach(ev => document.addEventListener(ev, unlockAudio, { once: true, passive: true }));
+function beep() {
+  if (!AC) return;
+  try {
+    if (AC.state === "suspended") AC.resume();
+    [0, 0.3].forEach(off => {
+      const o = AC.createOscillator(), g = AC.createGain();
+      o.type = "sine"; o.frequency.value = 880;
+      o.connect(g); g.connect(AC.destination);
+      const t0 = AC.currentTime + off;
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.exponentialRampToValueAtTime(0.3, t0 + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.24);
+      o.start(t0); o.stop(t0 + 0.26);
+    });
+  } catch (e) { }
+}
+function restDone() {
+  const fl = el("flash"); if (fl) { fl.classList.remove("go"); void fl.offsetWidth; fl.classList.add("go"); setTimeout(() => fl.classList.remove("go"), 1300); }
+  const t = el("timer"); if (t) { t.classList.remove("ring"); void t.offsetWidth; t.classList.add("ring"); setTimeout(() => t.classList.remove("ring"), 1300); }
+  try { if (navigator.vibrate) navigator.vibrate([200, 100, 200, 100, 300]); } catch (e) { }
+  beep();
+  toast("休息结束,下一组");
+}
+function startTimer(sec) { unlockAudio(); S.timerEnd = Date.now() + sec * 1000; clearInterval(S.timerId); S.timerId = setInterval(tickTimer, 250); tickTimer(); }
+function tickTimer() { const t = el("timer"); const left = Math.ceil((S.timerEnd - Date.now()) / 1000); if (left <= 0) { clearInterval(S.timerId); if (S.timerEnd) { S.timerEnd = 0; restDone(); } t.classList.add("idle"); el("timerTxt").textContent = "休息"; el("timerSub").textContent = "90s"; return; } t.classList.remove("idle"); el("timerTxt").textContent = Math.floor(left / 60) + ":" + String(left % 60).padStart(2, "0"); el("timerSub").textContent = "点一下停止"; }
 el("timer").addEventListener("click", () => { if (S.timerEnd > Date.now()) { S.timerEnd = 0; tickTimer(); } else startTimer(90); });
 
 /* ======================= FOOD ======================= */
