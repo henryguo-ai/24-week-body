@@ -1251,21 +1251,79 @@ const COACH_SYS = `你是这个人的力量与体成分教练,长期跟他。规
 用中文,口语,直接给判断和动作,不要罗列免责声明,不要每次重复自我介绍。
 有数字就用他的数字。数据不够就说缺什么。每次回答不超过 200 字。
 涉及疼痛、受伤、疾病、用药、怀孕:先让他去看医生,再给保守建议。
-每次提问前面会附上他的最新数据,以最新那份为准 —— 前面对话里的旧数字已经过期。`;
+每次提问前面会附上他的完整最新数据(体重、围度、体成分、近两周每天吃了多少、最近几次训练的每个动作和重量、加重规则),以最新那份为准 —— 前面对话里的旧数字已经过期。
+不要问他要你已经能看到的数据。数据里写「没记」「还没量过」的,可以提醒他补上。`;
 
-function coachCtx() {
-  const w = weekNo(), T = nutritionFor(w), P = PLAN;
-  const ws = weightSeries().slice(-14).map(x => `${x.date.slice(5)} ${x.kg.toFixed(1)}`).join(" / ");
-  const recent = (S.workouts || []).slice(0, 5).map(x => `${x.date.slice(5)} ${x.dayName}`).join(" / ");
-  const sc = (S.body || []).filter(b => b.bf != null).slice(-1)[0];
-  return `【今天】${todayStr()} · 第 ${w} 周 / 共 24 周
-【计划】${P.block || ""} 目标:${P.goal || ""}
-基线 ${P.baseline ? `${P.baseline.weightLb} lb / 体脂 ${P.baseline.bfPct}% / 腰 ${P.baseline.waistCm} cm` : "无"};目标 ${P.targets.weightLb} lb / 体脂 ${P.targets.bfPct}% / 腰 ${P.targets.waistCm} cm,${P.targets.goalDate}
-本周热量 ${T.kcal} kcal / 蛋白 ${T.protein} g
-【近 14 天体重 kg】${ws || "还没记"}
-【最近一次体成分】${sc ? `${sc.date} 体脂 ${sc.bf}%${sc.lbm != null ? " / 瘦体重 " + sc.lbm + " lb" : ""}` : "还没测"}
-【最近训练】${recent || "还没练"}
-【加重规则】${(P.rules || []).slice(0, 4).join(" ")}`;
+async function coachCtx() {
+  await loadBody();
+  const P = PLAN, w = weekNo(), T = nutritionFor(w), B = P.baseline || {}, G = P.targets || {};
+  const today = todayStr();
+  const L = [];
+
+  L.push(`【今天】${today} · 第 ${w} 周 / 共 24 周 · ${P.block || ""}`);
+  L.push(`【他要什么】${P.goal || "(计划里没写)"}`);
+
+  // ---- 身体 ----
+  const ws = weightSeries(); const avg7 = avgAt(ws, today), avg14 = avgAt(ws, addDays(today, -14));
+  const rate = (avg7 != null && avg14 != null) ? ((avg7 - avg14) / 2).toFixed(2) : null;
+  L.push(`\n【体重】基线 ${B.weightLb || "?"} lb → 目标 ${G.weightLb || "?"} lb(${G.goalDate || "?"})`);
+  L.push(`7 天均值 ${avg7 != null ? avg7.toFixed(1) + " kg" : "数据不足"};近两周每周 ${rate != null ? rate + " kg" : "算不出"}`);
+  L.push(`逐日(近 21 天,kg):${ws.slice(-21).map(x => x.date.slice(5) + " " + x.kg.toFixed(1)).join(" / ") || "还没记"}`);
+
+  const lt = S.body.find(b => b.waistCm != null);
+  L.push(`\n【围度 cm】基线 腰 ${B.waistCm || "?"} / 胸 ${B.chestCm || "?"} / 臂 ${B.armCm || "?"} → 目标腰 ${G.waistCm || "?"}`);
+  L.push(lt ? `最新 ${lt.date}:腰 ${lt.waistCm}${lt.chestCm != null ? " / 胸 " + lt.chestCm : ""}${lt.armCm != null ? " / 臂 " + lt.armCm : ""}` : "还没量过围度(这是比体重更有用的一个数,可以催他量)");
+
+  const scans = S.body.filter(b => b.bf != null).slice().sort((a, b) => a.date < b.date ? -1 : 1);
+  L.push(`\n【体成分】${scans.length ? scans.map(b => `${b.date} 体脂 ${b.bf}%${b.lbm != null ? " 瘦体重 " + b.lbm + " lb" : ""}${b.smm != null ? " 骨骼肌 " + b.smm + " lb" : ""}${b.visceral != null ? " 内脏 " + b.visceral : ""}`).join(" | ") : "还没测过"}`);
+
+  // ---- 饮食 ----
+  const ms = await safe(() => dbList("meals", { field: "date", dir: "desc", limit: 500, gte: ["date", addDays(today, -13)] }), null);
+  const meals = (ms === FAIL || !ms) ? [] : ms;
+  const dd = []; for (let i = 13; i >= 0; i--) dd.push(addDays(today, -i));
+  const perDay = dd.map(d => {
+    const dm = meals.filter(m => m.date === d); if (!dm.length) return `${d.slice(5)} 没记`;
+    const k = dm.reduce((a, m) => a + (m.kcal || 0), 0), p = dm.reduce((a, m) => a + (m.protein || 0), 0);
+    const t = nutritionFor(weekNo(d));
+    return `${d.slice(5)} ${r0(k)}/${t.kcal}kcal 蛋白${r0(p)}/${t.protein}`;
+  }).join(" | ");
+  const logged = dd.map(d => meals.filter(m => m.date === d)).filter(x => x.length);
+  const avgK = logged.length ? r0(logged.reduce((a, x) => a + x.reduce((b, m) => b + (m.kcal || 0), 0), 0) / logged.length) : null;
+  const avgP = logged.length ? r0(logged.reduce((a, x) => a + x.reduce((b, m) => b + (m.protein || 0), 0), 0) / logged.length) : null;
+  L.push(`\n【本周目标】${T.kcal} kcal · 蛋白 ${T.protein} g · 碳水 ${T.carbs} · 脂肪 ${T.fat}${T.adjusted ? "(教练调过,原定 " + T.baseKcal + ")" : ""}`);
+  L.push(`【近 14 天实际】记录了 ${logged.length}/14 天${avgK != null ? `,均 ${avgK} kcal / 蛋白 ${avgP} g` : ""}`);
+  L.push(perDay);
+  const cnt = new Map(); meals.forEach(m => { const k = (m.text || "").trim(); if (k && k.length < 30) cnt.set(k, (cnt.get(k) || 0) + 1); });
+  const topF = [...cnt.entries()].sort((a, b) => b[1] - a[1]).slice(0, 10).map(x => `${x[0]}×${x[1]}`).join("、");
+  L.push(`【他常吃】${topF || "还没记录"}`);
+
+  // ---- 训练 ----
+  const wks = (S.workouts || []).slice(0, 8);
+  L.push(`\n【最近训练】共记录 ${(S.workouts || []).length} 次;计划轮转 ${(P.order || []).join(" → ") || "无力量日"}`);
+  L.push(wks.length ? wks.map(x => {
+    const ex = (x.exercises || []).filter(e => (e.sets || []).some(y => y.r !== "" && y.r != null))
+      .map(e => `${e.n} ${(e.sets || []).filter(y => y.r !== "" && y.r != null).map(y => `${y.w || "-"}×${y.r}`).join(",")}${e.rir != null ? ` 剩${e.rir}` : ""}`).join("; ");
+    return `${x.date} ${x.dayName}${ex ? " — " + ex : "(没填次数)"}${x.notes ? " 备注:" + x.notes : ""}`;
+  }).join("\n") : "还没练过");
+  const rows2 = [], notYet = [];
+  for (const k of (P.order || [])) for (const e of ((P.days[k] || {}).ex || [])) {
+    if (e.kind === "cardio") continue;
+    const cur = (S.weights || {})[e.n];
+    const lastSet = (S.lastByEx || {})[e.n];
+    const lw = lastSet && (lastSet.sets || []).map(y => y.w).filter(y => y || y === 0).slice(-1)[0];
+    const now = cur ? cur.w : (lw != null && lw !== "" ? lw : null);
+    if (now != null) rows2.push(`${e.n} ${now}${e.start != null && now !== e.start ? `(起始 ${e.start})` : ""}`);
+    else notYet.push(`${e.n} ${e.start != null ? e.start : "?"}`);
+  }
+  L.push(`【练过的动作 · 当前重量 lb】${rows2.length ? rows2.join("、") : "一个都还没练过"}`);
+  if (notYet.length) L.push(`【还没练过 · 计划里的起始估值 lb】${notYet.join("、")}`);
+
+  // ---- 规则 ----
+  const blk = (P.blocks || []).find(b => w >= b.from && w <= b.to);
+  L.push(`\n【本阶段】${blk ? `第 ${blk.n} 阶段:复合 ${blk.rep.compound} 次 / 孤立 ${blk.rep.iso} 次。${blk.note || ""}` : ""}`);
+  L.push(`【轻量周】第 ${(P.deloadWeeks || []).join("、")} 周${(P.dietBreak ? `;恢复周吃回 ${P.dietBreak.kcal}` : "")}`);
+  L.push(`【加重与调整规则】\n${(P.rules || []).map((r, i) => (i + 1) + ". " + r).join("\n")}`);
+  return L.join("\n");
 }
 
 async function loadCoach() {
@@ -1282,7 +1340,7 @@ async function renderCoach() {
   const log = S.coach || [];
   box.innerHTML = `<div class="card">
     <div class="row between"><h3>问教练</h3>${log.length ? `<button class="btn ghost sm" id="coachClear">清空对话</button>` : ""}</div>
-    <div class="faint" style="margin:4px 0 10px">${log.length ? `它记得你们之前聊过的 ${log.length} 轮,` : "它"}也知道你的计划和最新数据。比如:这周该不该加重量 / 腰围两周没动怎么办 / 明天出差怎么吃 / 肩膀有点疼还能练吗</div>
+    <div class="faint" style="margin:4px 0 10px">${log.length ? `它记得你们之前聊过的 ${log.length} 轮,` : "它"}也看得到你的训练记录、每天吃了多少、体重围度和体成分。比如:这周该不该加重量 / 腰围两周没动怎么办 / 明天出差怎么吃 / 肩膀有点疼还能练吗</div>
     <div id="coachLog">${log.map(c => `<div style="margin-bottom:14px"><div class="feel" style="margin-bottom:6px">${esc(c.q)}</div><div class="note">${esc(c.a)}</div><div class="mini" style="margin-top:4px">${esc((c.date || "").slice(5))}</div></div>`).join("")}</div>
     <textarea id="coachQ" rows="2" placeholder="${log.length ? "接着问…" : "想问什么?"}"></textarea>
     <div class="status" id="coachStatus" style="margin-top:6px"></div>
@@ -1314,7 +1372,8 @@ async function askCoach() {
   const dropped = all.length - keep.length;
   if (dropped > 0) turns.push({ role: "user", content: `(前面还有 ${dropped} 轮更早的对话,因为太长没带过来。需要的话我会重新告诉你背景。)` }, { role: "assistant", content: "好。" });
   for (const c of keep) { turns.push({ role: "user", content: c.q }); turns.push({ role: "assistant", content: c.a }); }
-  turns.push({ role: "user", content: `${coachCtx()}\n\n【他问】${q}` });
+  const ctx = await coachCtx();
+  turns.push({ role: "user", content: `${ctx}\n\n【他问】${q}` });
   const baseLog = el("coachLog").innerHTML;
   try {
     let acc = "";
