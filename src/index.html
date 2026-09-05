@@ -440,14 +440,14 @@ const MOBILITY = {
   breath2: { n: "90/90 呼吸 5 次收尾", en: "90 90 breathing", r: "5 次深呼吸", feel: "腰贴地,腹部随呼气收紧", warn: "不憋气", cues: ["脚踩凳,膝髋 90 度", "鼻吸 4 秒,嘴呼 6 秒"], pose: ["S", [90, 118, -90, 180, 90, 90, 90, { bench: -90, footbench: 1 }], [90, 118, -90, 180, 90, 90, 90, { bench: -90, footbench: 1 }]] }
 };
 const DEFAULT_PLAN = {
-  version: 12, updatedAt: "2026-01-05", startDate: "2026-01-05",
+  version: 12, updatedAt: "2026-09-01", startDate: "2026-09-01",
   pattern: ["U1", "L", "cardio", "U2", "cardio", "U3", "rest"],
   events: [{ week: 1, label: "开始" }, { week: 19, label: "15% 目标区" }, { week: 24, label: "结束 · 转增肌" }],
   warmup: { common: "每天前 5 项一样,是给骨盆前倾和前伸头的每日剂量;后面 2 项按当天练的部位换。", U1: [MOBILITY.bike, MOBILITY.breath, MOBILITY.openbook, MOBILITY.wallangel, MOBILITY.chin, MOBILITY.bandrot, MOBILITY.facepull_w], U2: [MOBILITY.bike, MOBILITY.breath, MOBILITY.openbook, MOBILITY.wallangel, MOBILITY.chin, MOBILITY.pullapart, MOBILITY.scaphang], U3: [MOBILITY.bike, MOBILITY.breath, MOBILITY.openbook, MOBILITY.wallangel, MOBILITY.chin, MOBILITY.bandrot, MOBILITY.armpump], L: [MOBILITY.bike, MOBILITY.breath, MOBILITY.hipflex, MOBILITY.deadbug, MOBILITY.bandwalk, MOBILITY.airsquat], ramp: "第一个复合动作先做 2 组热身组:50% 重量 × 8 次,70% × 4 次,再上工作重量。热身组不要填进 app。" },
   stretch: { upper: [MOBILITY.doorway, MOBILITY.lat, MOBILITY.tri, MOBILITY.neck], lower: [MOBILITY.hipflex, MOBILITY.rectus, MOBILITY.fig4, MOBILITY.calf, MOBILITY.breath2] },
-  block: "第 1 阶段 · 01/05 起 6 周 · 每组 8-12 次",
-    goal: "【示例】目标:体脂 15% 以内,肩宽、臂粗、腰细。165 lb,腰 ≤ 82 cm。快线:6 月中到。围度基线 01-04:胸 100 / 腰 92 / 臂 32 cm。手臂围度在缺口里不会涨,先去脂肪,15% 以后进增肌期再做大。",
-  targets: { sleepH: 7.5, weightLb: 165, bfPct: 15, waistIn: 32, waistCm: 82, visceral: 6, goalDate: "2026-06-21" },
+  block: "第 1 阶段 · 09/01 起 6 周 · 每组 8-12 次",
+    goal: "【示例】目标:体脂 15% 以内,肩宽、臂粗、腰细。165 lb,腰 ≤ 82 cm。快线:次年 2 月中到。围度基线 08-31:胸 100 / 腰 92 / 臂 32 cm。手臂围度在缺口里不会涨,先去脂肪,15% 以后进增肌期再做大。",
+  targets: { sleepH: 7.5, weightLb: 165, bfPct: 15, waistIn: 32, waistCm: 82, visceral: 6, goalDate: "2027-02-15" },
   nutrition: [
     { from: 1, to: 4, kcal: 1900, protein: 165, carbs: 170, fat: 62, label: "第 1-4 周 · 开局(预设)" },
     { from: 5, to: 16, kcal: 2050, protein: 160, carbs: 206, fat: 65, label: "第 5-16 周 · 主体(预设)" },
@@ -462,8 +462,8 @@ const DEFAULT_PLAN = {
     { n: 4, from: 19, to: 24, rep: { compound: "6-8", iso: "12-15" }, cut: 1, note: "复合保强度,孤立高次数。收到 15% 或腰 ≤ 88。" }
   ],
   deloadWeeks: [6, 12, 18, 24],
-  baseline: { date: "2026-01-04", weightLb: 185.0, bfPct: 23.0, lbmLb: 142.5, smmLb: 78.0, waistIn: 36, visceral: 8, bmr: 1780, tee: 2700, chestCm: 100, waistCm: 92, armCm: 32 },
-  egym: { date: "2026-01-04", max: { "Row": 150, "Shoulder Press": 160, "Biceps Curl": 60, "Triceps Press": 160, "Leg Extension": 155, "Leg Curl": 130, "Leg Press": 410 } },
+  baseline: { date: "2026-08-31", weightLb: 185.0, bfPct: 23.0, lbmLb: 142.5, smmLb: 78.0, waistIn: 36, visceral: 8, bmr: 1780, tee: 2700, chestCm: 100, waistCm: 92, armCm: 32 },
+  egym: { date: "2026-08-31", max: { "Row": 150, "Shoulder Press": 160, "Biceps Curl": 60, "Triceps Press": 160, "Leg Extension": 155, "Leg Curl": 130, "Leg Press": 410 } },
   order: ["U1", "L", "U2", "U3"],
   schedule: [["周六", "肩臂 · 上胸"], ["周日", "腿 · 臀"], ["周一", "有氧"], ["周二", "背 · 下胸"], ["周三", "有氧"], ["周四", "手臂 · 胸"], ["周五", "休息"]],
   days: {
@@ -518,7 +518,7 @@ const DEFAULT_PLAN = {
     "有氧:上肢日练完加 10-15 分低强度(坡度走、单车或慢速爬楼机),腿日不加;有氧日 30-40 分低强度(游泳、坡度走、爬楼机);想要强度,一周最多 1 次单车间歇放在有氧日。不要求步数,平时能走就走;体重停滞时先加有氧时长(训练后 +5 分或有氧日 +10 分)再减热量。",
         "饮食阶梯只是预设轨迹,不是定死的。每周日教练按 7 天均值、围度、训练表现调下周热量(±100 起步)或有氧时长,调整会直接推到 app,饮食页会写明原定多少、现在多少、为什么。外食后第二天 +1-2 kg 是水,3 天回落,不算。"
   ],
-  milestones: [["01/04", "84.0 kg / 23.0%,胸 100 / 腰 92 / 臂 32 cm"], ["第 6 周 02/09-15", "约 81 kg,腰 ≤ 89;轻量 + 恢复周,量围度"], ["第 12 周 03/23-29", "约 78.5 kg,体脂约 19%,腰 ≤ 86;第三次体成分扫描;轻量 + 恢复周"], ["第 18 周 05/04-10", "约 76.5 kg;轻量 + 恢复周"], ["第 19-20 周 06 月", "74.8 kg,体脂 15%,腰 ≤ 82;维持 2 周后转增肌期做手臂"]],
+  milestones: [["08/31", "84.0 kg / 23.0%,胸 100 / 腰 92 / 臂 32 cm"], ["第 6 周 10/06-12", "约 81 kg,腰 ≤ 89;轻量 + 恢复周,量围度"], ["第 12 周 11/17-23", "约 78.5 kg,体脂约 19%,腰 ≤ 86;第三次体成分扫描;轻量 + 恢复周"], ["第 18 周 12/29-01/04", "约 76.5 kg;轻量 + 恢复周"], ["第 19-20 周 次年 2 月", "74.8 kg,体脂 15%,腰 ≤ 82;维持 2 周后转增肌期做手臂"]],
   notes: "【示例计划】这一份是虚构示例人的数据,用来展示框架长什么样。生成你自己的版本请看仓库里的 GENERATE.md。\n\n你只做三件事:每天早上记 kg;每组填次数 + 最后一组还能再做几次;每餐拍照或点常吃。其余 app 算。"
 };
 
@@ -1015,7 +1015,7 @@ async function renderBody() {
   el("avgWkg").textContent = avg7 ? `近 7 天称了 ${win.length} 次 · ${toLb(avg7).toFixed(1)} lb` : win.length ? `近 7 天只称了 ${win.length} 次,均值先不算` : "还没记体重";
   const ref = avg7 ?? (last ? last.kg : toKg(B.weightLb)); const toGo = ref - tKg; el("toGoal").textContent = (toGo > 0 ? "-" : "+") + Math.abs(toGo).toFixed(1) + " kg"; el("toGoal").className = "delta num " + (toGo > 0 ? "" : "down"); el("goalLine").textContent = "目标 " + tKg.toFixed(1) + " kg";
   const pv = paceVerdict(ws); const PV = el("paceVerdict"); PV.className = "verdict " + pv.cls; PV.textContent = pv.txt;
-  if (pv.rate && pv.rate < 0 && avg7) { const weeks = (avg7 - tKg) / (-pv.rate); const eta = addDays(todayStr(), Math.round(weeks * 7)); const diff = dayDiff(T.goalDate || P.targets.goalDate, eta); el("etaLine").textContent = `按现在速度 ${eta} 到 ${tKg.toFixed(1)} kg${diff === 0 ? ",正好" : diff < 0 ? `,比计划早 ${-diff} 天` : `,比计划晚 ${diff} 天`}`; } else el("etaLine").textContent = "";
+  if (pv.rate && pv.rate < 0 && avg7) { const weeks = (avg7 - tKg) / (-pv.rate); const eta = addDays(todayStr(), Math.round(weeks * 7)); const diff = dayDiff(T.goalDate || PLAN.targets.goalDate, eta); el("etaLine").textContent = `按现在速度 ${eta} 到 ${tKg.toFixed(1)} kg${diff === 0 ? ",正好" : diff < 0 ? `,比计划早 ${-diff} 天` : `,比计划晚 ${diff} 天`}`; } else el("etaLine").textContent = "";
   drawChart(ws, tKg);
   // tape
   const lt = S.body.find(b => b.waistCm != null); const waist = lt ? lt.waistCm : B.waistCm; const prog = Math.max(0, Math.min(100, (B.waistCm - waist) / (B.waistCm - T.waistCm) * 100));
@@ -1138,11 +1138,11 @@ function drawTimeline() {
   for (let k = 1; k <= 24; k += 2) { const x = px + (k - 1) * cw + cw / 2; s += `<text x="${x}" y="${y0 - 6}" text-anchor="middle" font-size="10">${k}</text>`; }
   (PLAN.events || []).forEach(e => { const x = px + (e.week - 1) * cw + cw / 2; s += `<line x1="${x}" y1="${y0 + bh + 12}" x2="${x}" y2="${y0 + bh + 22}" stroke="var(--line)"/><text x="${x}" y="${y0 + bh + 34}" text-anchor="${e.week > 20 ? "end" : e.week < 3 ? "start" : "middle"}" font-size="11" fill="var(--ink2)">${esc(e.label)}</text>`; });
   if (w >= 1 && w <= 24) { const x = px + (w - 1) * cw + cw / 2; s += `<line x1="${x}" y1="${y0 - 16}" x2="${x}" y2="${y0 + bh + 10}" stroke="var(--ink)" stroke-width="2"/><text x="${x}" y="${y0 - 20}" text-anchor="middle" font-size="11" font-weight="700" fill="var(--ink)">今天</text>`; }
-  s += `<text x="${px}" y="${H - 4}" font-size="10">橙条 = 轻量 + 恢复周(组数减半,吃回 ${(P.dietBreak&&P.dietBreak.kcal)||""})</text>`;
+  s += `<text x="${px}" y="${H - 4}" font-size="10">橙条 = 轻量 + 恢复周(组数减半,吃回 ${(PLAN.dietBreak && PLAN.dietBreak.kcal) || ""})</text>`;
   el("timeline").innerHTML = s; el("tlNow").textContent = w >= 1 ? `第 ${w} 周 · 还剩 ${Math.max(0, 24 - w)} 周` : `${PLAN.startDate.slice(5).replace("-", "/")} 开始`;
 }
 function drawNutri() {
-  const W = 360, H = 110, px = 40, py = 10, cw = (W - px - 10) / 24; const _k = P.nutrition.map(x => x.kcal).concat(P.dietBreak ? [P.dietBreak.kcal] : []);
+  const W = 360, H = 110, px = 40, py = 10, cw = (W - px - 10) / 24; const _k = PLAN.nutrition.map(x => x.kcal).concat(PLAN.dietBreak ? [PLAN.dietBreak.kcal] : []);
   const lo = Math.floor((Math.min(..._k) - 150) / 50) * 50, hi = Math.ceil((Math.max(..._k) + 150) / 50) * 50; const Y = v => py + (hi - v) / (hi - lo) * (H - py - 22); let s = "";
   Array.from(new Set(_k)).sort((a, b) => a - b).forEach(v => s += `<line x1="${px}" x2="${W - 10}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--line)"/><text x="${px - 5}" y="${Y(v) + 4}" text-anchor="end" font-size="10">${v}</text>`);
   const w = weekNo();
