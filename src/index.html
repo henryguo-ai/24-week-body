@@ -1270,7 +1270,7 @@ function coachCtx() {
 
 async function loadCoach() {
   if (S.coachLoaded) return;
-  const rows = await safe(() => dbList("coach", { field: "createdAt", dir: "desc", limit: 40 }), null);
+  const rows = await safe(() => dbList("coach", { field: "createdAt", dir: "desc", limit: 1000 }), null);
   S.coach = (rows === FAIL || !rows) ? [] : rows.slice().sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
   S.coachLoaded = true;
 }
@@ -1282,7 +1282,7 @@ async function renderCoach() {
   const log = S.coach || [];
   box.innerHTML = `<div class="card">
     <div class="row between"><h3>问教练</h3>${log.length ? `<button class="btn ghost sm" id="coachClear">清空对话</button>` : ""}</div>
-    <div class="faint" style="margin:4px 0 10px">它记得你们之前聊过什么,也知道你的计划和最新数据。比如:这周该不该加重量 / 腰围两周没动怎么办 / 明天出差怎么吃 / 肩膀有点疼还能练吗</div>
+    <div class="faint" style="margin:4px 0 10px">${log.length ? `它记得你们之前聊过的 ${log.length} 轮,` : "它"}也知道你的计划和最新数据。比如:这周该不该加重量 / 腰围两周没动怎么办 / 明天出差怎么吃 / 肩膀有点疼还能练吗</div>
     <div id="coachLog">${log.map(c => `<div style="margin-bottom:14px"><div class="feel" style="margin-bottom:6px">${esc(c.q)}</div><div class="note">${esc(c.a)}</div><div class="mini" style="margin-top:4px">${esc((c.date || "").slice(5))}</div></div>`).join("")}</div>
     <textarea id="coachQ" rows="2" placeholder="${log.length ? "接着问…" : "想问什么?"}"></textarea>
     <div class="status" id="coachStatus" style="margin-top:6px"></div>
@@ -1303,16 +1303,27 @@ async function askCoach() {
   const btn = el("coachSend"), st = el("coachStatus"); btn.disabled = true; st.className = "status"; st.textContent = "教练在想…";
   // 多轮:第一轮立身份,中间是历史问答,最后一轮带最新数据 + 本次问题
   const turns = [{ role: "user", content: COACH_SYS }, { role: "assistant", content: "明白。每次你把最新数据发我,我按最新的答。" }];
-  for (const c of (S.coach || []).slice(-8)) { turns.push({ role: "user", content: c.q }); turns.push({ role: "assistant", content: c.a }); }
+  // 全部历史都带上;唯一的约束是上下文窗口,不是成本。从最近往前装,装不下的最老那批丢掉。
+  const HIST_BUDGET = 240000; let used = 0; const keep = [];
+  const all = S.coach || [];
+  for (let i = all.length - 1; i >= 0; i--) {
+    const c = all[i], cost = (c.q || "").length + (c.a || "").length;
+    if (used + cost > HIST_BUDGET) break;
+    used += cost; keep.unshift(c);
+  }
+  const dropped = all.length - keep.length;
+  if (dropped > 0) turns.push({ role: "user", content: `(前面还有 ${dropped} 轮更早的对话,因为太长没带过来。需要的话我会重新告诉你背景。)` }, { role: "assistant", content: "好。" });
+  for (const c of keep) { turns.push({ role: "user", content: c.q }); turns.push({ role: "assistant", content: c.a }); }
   turns.push({ role: "user", content: `${coachCtx()}\n\n【他问】${q}` });
   const baseLog = el("coachLog").innerHTML;
   try {
     let acc = "";
-    const r = await sample(turns, { modelTier: "default", cache: false, onText: ({ text }) => {
+    const r = await sample(turns, { modelTier: "complex", cache: false, onText: ({ text }) => {
       acc = text; st.textContent = "";
       el("coachLog").innerHTML = baseLog + `<div style="margin-bottom:14px"><div class="feel" style="margin-bottom:6px">${esc(q)}</div><div class="note">${esc(acc)}</div></div>`;
     } });
     const ans = (r && r.text) || acc; if (!ans) throw { code: "empty" };
+    if (r && r.truncated) toast("回答被截断了,可以让它接着说");
     const doc = { date: todayStr(), q, a: ans, week: weekNo(), createdAt: Date.now() };
     const id = uid(); await safe(() => dbSet("coach", id, doc), "对话没存下来");
     S.coach = (S.coach || []).concat([Object.assign({ id }, doc)]);
