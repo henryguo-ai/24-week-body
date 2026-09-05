@@ -237,3 +237,21 @@ app 启动会读 db 的 `config/plan`，版本号**大于等于**代码里的就
 | `中午在外面吃了个牛肉面` | 读不出 → 才报错 |
 
 包装食品把标签抄进去就能记上，不依赖 AI。中英文都要求数字后面跟 `g`，否则「蛋白棒 热量190」会被读成蛋白 190（踩过）。
+
+## 2026-09-06 · 记录标题不该是你打的那一整段
+
+写得越详细，标题越难看：整段「david peanut butter, chocolate chunk flavored protein bar with 28 g protein 150 cal zero sugar」都成了这一餐的名字。
+
+连锁问题更麻烦：**「常吃」是按标题分组的**，标题每次都不一样，它就永远学不会你常吃什么。
+
+- AI 现在会返回一个短名（prompt 里写明「只要品名/菜名，不要写营养数字」），**永远优先拿它当标题**。之前只在用户没打字时才用
+- 你写的原文另存进 `raw`，编辑那一餐时能看到「你当时写的：…」
+- AI 失败时本地缩一个名：在第一个数字或 `with / 热量 / protein / calories` 这些词处截断，再按词边界压到 28 字
+
+| 输入 | 标题 |
+|---|---|
+| `david peanut butter, chocolate chunk...28 g protein 150 cal` | AI：`David 花生酱蛋白棒` / 兜底：`david peanut butter…` |
+| `蛋白棒 热量190大卡 蛋白质20g 碳水14g 脂肪7g` | `蛋白棒` |
+| `Chipotle chicken bowl with brown rice, 720 calories` | `Chipotle chicken bowl` |
+
+踩了个坑：一开始「蛋白棒」被「蛋白」这个关键词从第 0 位切没了。现在关键词只在出现位置 > 2 时才算数。

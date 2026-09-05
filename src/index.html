@@ -1143,6 +1143,22 @@ function compressImage(file, maxSide, q) {
     img.onerror = () => { URL.revokeObjectURL(url); rej(new Error("decode")); }; img.src = url; });
 }
 el("aiBtn").addEventListener("click", () => runEstimate(true));
+function shortName(t) {
+  if (!t) return "";
+  const raw = String(t).trim(); let cut = raw.length;
+  const dig = raw.search(/\d/);                                  // 第一个数字
+  const kw = raw.search(/(?:with\s|contains\s|热量|含量|calories?\b|protein\b|carbs?\b|carbohydrate|fat\b)/i);
+  if (dig > 2) cut = Math.min(cut, dig);
+  if (kw > 2) cut = Math.min(cut, kw);
+  let x = raw.slice(0, cut).replace(/[\s,，、;；:：·\-]+$/, "").trim();
+  if (x.length < 2) x = raw;
+  const CAP = 28;
+  if (x.length > CAP) {                                          // 尽量断在词边界
+    const head = x.slice(0, CAP), sp = head.lastIndexOf(" ");
+    x = (sp > CAP * 0.5 ? head.slice(0, sp) : head).replace(/[\s,，、]+$/, "") + "…";
+  }
+  return x;
+}
 function parseMacrosFromText(t) {
   if (!t) return null; const s0 = String(t);
   const G = re => { const m = s0.match(re); return m ? Math.round(+m[1]) : null; };
@@ -1162,12 +1178,12 @@ async function runEstimate(auto) {
 ${S.photoBlob ? "有照片,按照片判断种类和份量。照片是包装上的营养成分表就直接读表上的数字。" : ""}${txt ? "文字:「" + txt + "」。文字写了份量/品牌/营养成分就以文字为准。" : ""}
 要点:认得出的连锁品牌用官方数值并计入附带的酱料黄油;餐厅版比家常菜热量+25%脂肪+40%;中式炒菜单独算烹调油一盘15-25ml;含热量的饮料要算进去。
 只返回这个 JSON,不要任何别的字:
-{"kcal":0,"protein":0,"carbs":0,"fat":0,"name":"12字内中文菜名","note":"15字内,最大的不确定项"}
+{"kcal":0,"protein":0,"carbs":0,"fat":0,"name":"这一餐叫什么,只要品名/菜名,不要写营养数字,16字内","note":"15字内,最大的不确定项"}
 数字取整。`;
   try { const opts = { modelTier: "default", cache: false }; if (S.photoBlob) opts.images = S.photoBlob; const r = await sample.json(prompt, opts); if (!r || typeof r !== "object") throw { code: "invalid_json" };
     el("mKcal").value = r0(r.kcal || 0); el("mP").value = r0(r.protein || 0); el("mC").value = r0(r.carbs || 0); el("mF").value = r0(r.fat || 0);
     el("aiItems").innerHTML = "";
-    S.aiRange = r.note || ""; st.textContent = r.note || ""; if (!txt && r.name) el("mealText").value = r.name; S.aiUsed = true; st.className = "status";
+    S.aiRange = r.note || ""; st.textContent = r.note || ""; if (r.name) S.mealName = String(r.name).slice(0, 24); S.aiUsed = true; st.className = "status";
     if (auto) { const okAuto = await saveMealNow(true); if (okAuto) st.textContent = `已记 ${r0(r.kcal_high || r.kcal || 0)} kcal · 点上面那条可以改`; }
   } catch (e) {
     console.error("[估算失败]", e);
@@ -1175,7 +1191,7 @@ ${S.photoBlob ? "有照片,按照片判断种类和份量。照片是包装上�
     const local = parseMacrosFromText(txt);
     if (local) {
       el("mKcal").value = local.kcal; el("mP").value = local.protein; el("mC").value = local.carbs; el("mF").value = local.fat;
-      S.aiUsed = false; S.aiRange = ""; st.className = "status";
+      S.aiUsed = false; S.aiRange = ""; S.mealName = shortName(txt); st.className = "status";
       st.textContent = "AI 没答上来,我直接读了你写的数字";
       if (auto) { const ok2 = await saveMealNow(true); if (ok2) st.textContent = `已记 ${local.kcal} kcal（读自你写的文字）· 点上面那条可以改`; }
       return;
@@ -1192,7 +1208,8 @@ ${S.photoBlob ? "有照片,按照片判断种类和份量。照片是包装上�
 function openMealEdit(m) {
   openSheet(`<h3 style="margin-bottom:10px">改这一笔</h3>
     ${m.photo ? `<img src="${m.photo}" alt="" style="width:100%;max-height:160px;object-fit:cover;border-radius:12px;margin-bottom:10px">` : ""}
-    <div class="field"><label>吃了什么</label><input id="emText" value="${esc(m.text || "")}"></div>
+    <div class="field"><label>叫什么</label><input id="emText" value="${esc(m.text || "")}"></div>
+    ${m.raw ? `<div class="mini" style="margin-top:6px">你当时写的:${esc(m.raw)}</div>` : ""}
     <div class="grid4" style="margin-top:8px">
       <div class="field"><label>kcal</label><input type="number" id="emK" inputmode="numeric" value="${r0(m.kcal || 0)}"></div>
       <div class="field"><label>蛋白 g</label><input type="number" id="emP" inputmode="numeric" value="${r0(m.protein || 0)}"></div>
@@ -1203,7 +1220,7 @@ function openMealEdit(m) {
     <button class="btn primary block" id="emSave" style="margin-top:12px">保存修改</button>
     <button class="btn block danger" id="emDel" style="margin-top:8px">删掉这一笔</button>`);
   el("emSave").addEventListener("click", async () => {
-    const patch = Object.assign({}, m, { text: el("emText").value.trim(), kcal: num(el("emK").value) || 0, protein: num(el("emP").value) || 0, carbs: num(el("emC").value) || 0, fat: num(el("emF").value) || 0, source: "manual", updatedAt: Date.now() });
+    const patch = Object.assign({}, m, { text: el("emText").value.trim() || m.text, kcal: num(el("emK").value) || 0, protein: num(el("emP").value) || 0, carbs: num(el("emC").value) || 0, fat: num(el("emF").value) || 0, source: "manual", updatedAt: Date.now() });
     delete patch.id;
     const ok = await safe(() => dbSet("meals", m.id, patch), "保存失败");
     if (ok !== FAIL) { closeSheet(); toast("改好了"); S.quickBuilt = false; renderFood(); }
@@ -1217,12 +1234,13 @@ async function saveMealNow(auto) {
   const text = el("mealText").value.trim(); const kcal = num(el("mKcal").value), protein = num(el("mP").value), carbs = num(el("mC").value), fat = num(el("mF").value);
   if (!text && !S.photoDataUrl) { toast("写点什么或拍张照"); return false; }
   if (kcal === null && protein === null) { toast("至少填热量或蛋白"); return false; }
-  const now = new Date(); const doc = { date: S.foodDate, time: String(now.getHours()).padStart(2, "0") + ":" + String(now.getMinutes()).padStart(2, "0"), text, kcal: kcal || 0, protein: protein || 0, carbs: carbs || 0, fat: fat || 0, photo: S.photoDataUrl || null, source: S.aiUsed ? "ai" : "manual", range: S.aiUsed ? (S.aiRange || null) : null, createdAt: Date.now() };
+  const title = (S.mealName || shortName(text) || text).trim();
+  const now = new Date(); const doc = { date: S.foodDate, time: String(now.getHours()).padStart(2, "0") + ":" + String(now.getMinutes()).padStart(2, "0"), text: title, raw: (text && text !== title) ? text : null, kcal: kcal || 0, protein: protein || 0, carbs: carbs || 0, fat: fat || 0, photo: S.photoDataUrl || null, source: S.aiUsed ? "ai" : "manual", range: S.aiUsed ? (S.aiRange || null) : null, createdAt: Date.now() };
   const btn = el("saveMeal"); if (btn) btn.disabled = true;
   const ok = await safe(() => dbSet("meals", uid(), doc), "保存失败(照片可能太大),再试一次");
   if (btn) btn.disabled = false; if (ok === FAIL) return false;
   ["mealText", "mKcal", "mP", "mC", "mF"].forEach(i => { const e = el(i); if (e) e.value = ""; });
-  el("aiItems").innerHTML = ""; el("manualBox").hidden = true; S.photoBlob = null; S.photoDataUrl = null; S.aiUsed = false; S.aiRange = "";
+  el("aiItems").innerHTML = ""; el("manualBox").hidden = true; S.photoBlob = null; S.photoDataUrl = null; S.aiUsed = false; S.aiRange = ""; S.mealName = "";
   if (!auto) { el("aiStatus").textContent = ""; toast("已记录"); }
   await renderFood(); return true;
 }
