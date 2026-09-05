@@ -128,7 +128,7 @@ https://raw.githubusercontent.com/henryguo-ai/24-week-body/main/PLAN.schema.md
 > 再问几个数字，有就给，没有我来估：
 >
 > 1. 测过体成分吗？InBody、Evolt、DEXA、或者家里的体脂秤 —— 有的话给我体脂率和测量日期
-> 4. 腰围量过吗？没量过也没关系
+> 2. 腰围量过吗？没量过也没关系
 
 **如果没有腰围**，教他量，这是整个计划里最有用的一个数：
 
