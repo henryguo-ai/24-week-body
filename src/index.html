@@ -266,24 +266,26 @@ details.sub summary::-webkit-details-marker{display:none}
     <div class="card">
       <div class="row between"><h3>记一餐</h3><button class="chip sm" id="outBtn">🍽 今天外食</button></div>
       <div id="outRules" class="banner" hidden style="margin:8px 0 0;line-height:1.7">白天两餐各 <b id="outA">–</b> · 晚餐留 <b id="outB">–</b><br>不碰:面包篮 / 开胃菜 / 黄油 · 芝士 · ranch<br>饮料只喝无糖茶或水(3 杯含糖饮料 ≈ 500 kcal ≈ 每月 1.5 lb)<br>点菜说:no butter, dressing on the side</div>
-      <div class="eyebrow" style="margin:10px 0 4px">常吃 · 点一下直接记</div>
+      <div class="eyebrow" style="margin:10px 0 4px" id="quickLbl">常吃 · 点一下直接记</div>
       <div class="quick" id="quick"></div>
       <div class="stack" style="margin-top:6px">
-        <img id="mealPreview" class="preview" hidden alt="食物照片预览">
-        <textarea id="mealText" rows="2" placeholder="吃了什么?一句话或拍照。比如:鸡胸肉 200g,米饭一碗"></textarea>
+        <textarea id="mealText" rows="2" placeholder="吃了什么?一句话就行。或者直接拍照。"></textarea>
         <div class="row">
-          <label class="btn" style="flex:1">📷 拍照<input type="file" id="mealPhoto" accept="image/*" capture="environment" hidden></label>
-          <button class="btn" style="flex:1" id="aiBtn" hidden>✦ AI 估算</button>
+          <label class="btn primary" style="flex:1">📷 拍照记录<input type="file" id="mealPhoto" accept="image/*" capture="environment" hidden></label>
+          <button class="btn" style="flex:1" id="aiBtn">记这一笔</button>
         </div>
         <div class="status" id="aiStatus"></div>
         <div id="aiItems" class="items"></div>
-        <div class="grid4">
-          <div class="field"><label>kcal</label><input type="number" id="mKcal" inputmode="numeric"></div>
-          <div class="field"><label>蛋白 g</label><input type="number" id="mP" inputmode="numeric"></div>
-          <div class="field"><label>碳水 g</label><input type="number" id="mC" inputmode="numeric"></div>
-          <div class="field"><label>脂肪 g</label><input type="number" id="mF" inputmode="numeric"></div>
+        <div id="manualBox" hidden>
+          <div class="mini" style="margin:8px 0 4px">AI 估算这会儿用不了,自己填一下</div>
+          <div class="grid4">
+            <div class="field"><label>kcal</label><input type="number" id="mKcal" inputmode="numeric"></div>
+            <div class="field"><label>蛋白 g</label><input type="number" id="mP" inputmode="numeric"></div>
+            <div class="field"><label>碳水 g</label><input type="number" id="mC" inputmode="numeric"></div>
+            <div class="field"><label>脂肪 g</label><input type="number" id="mF" inputmode="numeric"></div>
+          </div>
+          <button class="btn primary block" id="saveMeal" style="margin-top:8px">保存这餐</button>
         </div>
-        <button class="btn primary block" id="saveMeal">保存这餐</button>
       </div>
     </div>
     <div class="card">
@@ -299,13 +301,19 @@ details.sub summary::-webkit-details-marker{display:none}
 
   <!-- ============ BODY ============ -->
   <section class="page" id="page-body">
-    <div class="card">
+    <div class="card" id="kgCard">
+      <div id="kgDone" hidden class="row between" style="cursor:pointer">
+        <div><div class="eyebrow">今早已记</div><div class="big num" id="kgDoneVal" style="font-size:34px">--<small style="font-size:14px;color:var(--ink3);margin-left:4px">kg</small></div></div>
+        <span class="btn ghost">改一下</span>
+      </div>
+      <div id="kgForm">
       <div class="eyebrow">今早空腹体重</div>
       <div class="bigin" style="margin-top:6px">
         <input type="number" id="bKg" step="0.1" inputmode="decimal" placeholder="kg" class="num">
         <button class="btn primary" id="saveKg">记下</button>
       </div>
       <div class="faint" id="kgHint" style="margin-top:6px"></div>
+      </div>
     </div>
     <div class="card">
       <div class="hero">
@@ -346,7 +354,7 @@ details.sub summary::-webkit-details-marker{display:none}
       <div class="mini" style="margin:6px 0 10px">Evolt 体脂误差 ±3-5%,只拿 Evolt 比 Evolt,同一条件(晨起空腹未训练)。差不到 2 个点就当没变。</div>
       <label class="btn block">📷 上传扫描单照片,自动读数<input type="file" id="scanPhoto" accept="image/*" hidden></label>
       <div class="status" id="scanStatus" style="margin-top:6px"></div>
-      <img id="scanPreview" class="preview" hidden alt="扫描单" style="margin-top:8px">
+      <details id="scanManual" style="margin-top:8px"><summary class="faint" style="cursor:pointer">读不出来?自己填</summary>
       <div class="grid4" style="margin-top:8px">
         <div class="field"><label>日期</label><input type="date" id="bScanDate" style="font-size:13px;padding:8px 4px"></div>
         <div class="field"><label>体重 kg</label><input type="number" id="bScanKg" step="0.1" inputmode="decimal"></div>
@@ -358,7 +366,7 @@ details.sub summary::-webkit-details-marker{display:none}
         <div class="field"><label>内脏等级</label><input type="number" id="bVis" inputmode="numeric"></div>
         <div class="field"><label>体水分 lb</label><input type="number" id="bTbw" step="0.1" inputmode="decimal"></div>
         <div class="field"><label>&nbsp;</label><button class="btn primary block" id="saveScan" style="min-height:40px">保存</button></div>
-      </div>
+      </div></details>
       <div id="scanList" style="margin-top:10px"></div>
     </div>
     <div class="card">
@@ -904,12 +912,35 @@ function tickTimer() { const t = el("timer"); const left = Math.ceil((S.timerEnd
 el("timer").addEventListener("click", () => { if (S.timerEnd > Date.now()) { S.timerEnd = 0; tickTimer(); } else startTimer(90); });
 
 /* ======================= FOOD ======================= */
-const QUICK = [["乳清一勺", 120, 25, 3, 1.5], ["鸡胸 200g 熟", 330, 62, 0, 7], ["白米饭一碗 200g", 260, 5, 56, 0.6], ["全蛋 2 + 蛋白 3", 220, 30, 2, 10], ["希腊酸奶 170g + 蓝莓", 150, 17, 15, 0], ["三文鱼 150g", 280, 34, 0, 16], ["牛排 170g + 烤土豆(无黄油)", 690, 52, 60, 26], ["含糖饮料大杯 ⚠", 165, 0, 42, 0]];
+const QUICK_SEED = [["乳清一勺", 120, 25, 3, 1.5], ["鸡胸 200g 熟", 330, 62, 0, 7], ["白米饭一碗 200g", 260, 5, 56, 0.6], ["全蛋 2 + 蛋白 3", 220, 30, 2, 10], ["希腊酸奶 170g + 蓝莓", 150, 17, 15, 0], ["三文鱼 150g", 280, 34, 0, 16], ["牛排 170g + 烤土豆(无黄油)", 690, 52, 60, 26], ["含糖饮料大杯 ⚠", 165, 0, 42, 0]];
 el("foodPrev").addEventListener("click", () => { S.foodDate = addDays(S.foodDate, -1); renderFood(); });
 el("foodNext").addEventListener("click", () => { S.foodDate = addDays(S.foodDate, 1); renderFood(); });
 el("outBtn").addEventListener("click", () => { S.eatingOut = !S.eatingOut; el("outRules").hidden = !S.eatingOut; el("outBtn").classList.toggle("on", S.eatingOut); });
-el("quick").innerHTML = QUICK.map((q, i) => `<button data-q="${i}">${esc(q[0])}<small>${q[1]} kcal · P${q[2]}</small></button>`).join("");
-el("quick").querySelectorAll("[data-q]").forEach(b => b.addEventListener("click", async () => { const q = QUICK[+b.dataset.q]; const now = new Date(); const doc = { date: S.foodDate, time: String(now.getHours()).padStart(2, "0") + ":" + String(now.getMinutes()).padStart(2, "0"), text: q[0].replace(" ⚠", ""), kcal: q[1], protein: q[2], carbs: q[3], fat: q[4], photo: null, source: "quick", createdAt: Date.now() }; const ok = await safe(() => dbSet("meals", uid(), doc), "保存失败"); if (ok !== FAIL) { toast("已记 " + q[0]); renderFood(); } }));
+let QUICK = QUICK_SEED.slice();
+async function buildQuick() {
+  const rows = await safe(() => dbList("meals", { field: "date", dir: "desc", limit: 300 }), null);
+  if (rows === FAIL || !rows || rows.length < 4) { QUICK = QUICK_SEED.slice(); el("quickLbl").textContent = "常吃 · 点一下直接记"; return; }
+  const g = new Map();
+  for (const m of rows) {
+    const key = (m.text || "").trim(); if (!key || key.length > 24) continue;
+    const e = g.get(key) || { k: key, c: 0, last: 0, v: null };
+    e.c++; if ((m.createdAt || 0) > e.last) { e.last = m.createdAt || 0; e.v = [key, r0(m.kcal || 0), r0(m.protein || 0), r0(m.carbs || 0), r0(m.fat || 0)]; }
+    g.set(key, e);
+  }
+  const hist = [...g.values()].filter(e => e.v && e.v[1] > 0).sort((a, b) => b.c - a.c || b.last - a.last).slice(0, 8).map(e => e.v);
+  const have = new Set(hist.map(x => x[0]));
+  QUICK = hist.concat(QUICK_SEED.filter(x => !have.has(x[0]))).slice(0, 8);
+  el("quickLbl").textContent = hist.length >= 2 ? "你常吃的 · 点一下直接记" : "常吃 · 点一下直接记";
+  renderQuick();
+}
+function renderQuick() {
+  el("quick").innerHTML = QUICK.map((q, i) => `<button data-q="${i}">${esc(q[0])}<small>${q[1]} kcal · P${q[2]}</small></button>`).join("");
+  wireQuick();
+}
+renderQuick();
+function wireQuick() {
+  el("quick").querySelectorAll("[data-q]").forEach(b => b.addEventListener("click", async () => { const q = QUICK[+b.dataset.q]; const now = new Date(); const doc = { date: S.foodDate, time: String(now.getHours()).padStart(2, "0") + ":" + String(now.getMinutes()).padStart(2, "0"), text: q[0].replace(" ⚠", ""), kcal: q[1], protein: q[2], carbs: q[3], fat: q[4], photo: null, source: "quick", createdAt: Date.now() }; const ok = await safe(() => dbSet("meals", uid(), doc), "保存失败"); if (ok !== FAIL) { toast("已记 " + q[0]); renderFood(); } }));
+}
 async function renderFood() {
   el("foodDate").textContent = S.foodDate === todayStr() ? "今天 · " + fmtDate(S.foodDate) : fmtDate(S.foodDate);
   const T = nutritionFor(weekNo(S.foodDate));
@@ -931,6 +962,7 @@ async function renderFood() {
   else if (tot.protein < T.protein * 0.9) { V.className = "verdict mid"; V.textContent = S.foodDate === todayStr() ? `热量还够,蛋白差 ${r0(pLeft)} g,补一勺乳清或鸡胸` : `热量够,蛋白差 ${r0(pLeft)} g`; }
   else { V.className = "verdict good"; V.textContent = "今天稳 ✓"; }
   // 7-day chart
+  if (!S.quickBuilt) { S.quickBuilt = true; buildQuick(); }
   const days = []; for (let i = 6; i >= 0; i--) days.push(addDays(S.foodDate, -i));
   const byDay = days.map(d => ({ d, kcal: S.weekMeals.filter(m => m.date === d).reduce((a, m) => a + (m.kcal || 0), 0), t: nutritionFor(weekNo(d)).kcal }));
   const logged = byDay.filter(x => x.kcal > 0); const avg = logged.length ? logged.reduce((a, x) => a + x.kcal, 0) / logged.length : 0;
@@ -939,7 +971,10 @@ async function renderFood() {
   el("weekAvg").textContent = logged.length ? `${logged.length} 天均值 ${r0(avg)}${Math.abs(avg - T.kcal) <= 100 ? " · 按计划走" : avg > T.kcal ? " · 偏高" : " · 偏低"}` : "";
   const Lst = el("mealList");
   if (!S.meals.length) { Lst.className = "faint"; Lst.textContent = "还没有记录"; }
-  else { Lst.className = ""; Lst.innerHTML = S.meals.map(m => `<div class="meal">${m.photo ? `<img src="${m.photo}" alt="">` : `<div class="ph">🍽</div>`}<div class="body"><div class="t">${esc(m.text || "(照片)")}</div><div class="m"><b>${r0(m.kcal || 0)}</b> kcal · P <b>${r0(m.protein || 0)}</b> · C ${r0(m.carbs || 0)} · F ${r0(m.fat || 0)}</div><div class="mini">${m.time || ""}${m.source === "ai" ? " · AI 估算" : m.source === "quick" ? " · 常吃" : ""}${m.range ? " · " + m.range : ""}</div></div><button class="icon" data-del="${m.id}" aria-label="删除">×</button></div>`).join(""); Lst.querySelectorAll("[data-del]").forEach(b => b.addEventListener("click", async () => { if (!confirm("删除这餐?")) return; await safe(() => dbDel("meals", b.dataset.del)); toast("已删除"); renderFood(); })); }
+  else { Lst.className = ""; Lst.innerHTML = S.meals.map(m => `<div class="meal">${m.photo ? `<img src="${m.photo}" alt="">` : `<div class="ph">🍽</div>`}<div class="body" data-edit="${m.id}" style="cursor:pointer"><div class="t">${esc(m.text || "(照片)")}</div><div class="m"><b>${r0(m.kcal || 0)}</b> kcal · P <b>${r0(m.protein || 0)}</b> · C ${r0(m.carbs || 0)} · F ${r0(m.fat || 0)}</div><div class="mini">${m.time || ""}${m.source === "ai" ? " · AI 估算" : m.source === "quick" ? " · 常吃" : ""}${m.range ? " · " + m.range : ""} · 点一下可改</div></div><button class="icon" data-del="${m.id}" aria-label="删除">×</button></div>`).join(""); Lst.querySelectorAll("[data-del]").forEach(b => b.addEventListener("click", async () => { if (!confirm("删除这餐?")) return; await safe(() => dbDel("meals", b.dataset.del)); toast("已删除"); renderFood(); })); }
+    Lst.querySelectorAll("[data-edit]").forEach(x => x.addEventListener("click", () => {
+      const mm = S.meals.find(y => y.id === x.dataset.edit); if (mm) openMealEdit(mm);
+    }));
   renderHabits();
 }
 function renderHabits() {
@@ -951,7 +986,7 @@ function renderHabits() {
 }
 el("mealPhoto").addEventListener("change", async e => {
   const f = e.target.files && e.target.files[0]; if (!f) return; el("aiStatus").textContent = "处理照片…";
-  try { const { blob, dataUrl } = await compressImage(f, 900, 0.72); S.photoBlob = blob; S.photoDataUrl = dataUrl; const p = el("mealPreview"); p.src = dataUrl; p.hidden = false; el("aiStatus").textContent = ""; if (sample && canImage) runEstimate(); }
+  try { const { blob, dataUrl } = await compressImage(f, 900, 0.72); S.photoBlob = blob; S.photoDataUrl = dataUrl; if (sample && canImage) { runEstimate(true); } else { el("manualBox").hidden = false; el("aiStatus").textContent = "照片已存,数字自己填一下"; } }
   catch (err) { console.error(err); el("aiStatus").textContent = "照片读取失败,换一张试试"; }
   e.target.value = "";
 });
@@ -960,9 +995,10 @@ function compressImage(file, maxSide, q) {
     img.onload = () => { const sc = Math.min(1, maxSide / Math.max(img.naturalWidth, img.naturalHeight)); const c = document.createElement("canvas"); c.width = Math.round(img.naturalWidth * sc); c.height = Math.round(img.naturalHeight * sc); c.getContext("2d").drawImage(img, 0, 0, c.width, c.height); URL.revokeObjectURL(url); let quality = q, dataUrl = c.toDataURL("image/jpeg", quality); while (dataUrl.length > 150000 && quality > 0.4) { quality -= 0.1; dataUrl = c.toDataURL("image/jpeg", quality); } c.toBlob(b => b ? res({ blob: b, dataUrl }) : rej(new Error("toBlob")), "image/jpeg", quality); };
     img.onerror = () => { URL.revokeObjectURL(url); rej(new Error("decode")); }; img.src = url; });
 }
-el("aiBtn").addEventListener("click", runEstimate);
-async function runEstimate() {
-  if (!sample) return; const txt = el("mealText").value.trim(); if (!txt && !S.photoBlob) { toast("先写点内容或拍张照"); return; }
+el("aiBtn").addEventListener("click", () => runEstimate(true));
+async function runEstimate(auto) {
+  const txt = el("mealText").value.trim();
+  if (!sample) { el("manualBox").hidden = false; if (txt || S.photoBlob) toast("AI 估算用不了,自己填数字"); else toast("先写点内容或拍张照"); return; } if (!txt && !S.photoBlob) { toast("先写点内容或拍张照"); return; }
   const st = el("aiStatus"); st.className = "status"; st.textContent = "AI 估算中…"; el("aiBtn").disabled = true; el("aiItems").innerHTML = "";
   const prompt = `你是给减脂期健身者估算餐食的营养师。宁可高估热量、低估蛋白,绝不美化。
 ${S.photoBlob ? "有照片,以照片判断种类和份量;" : ""}${txt ? "文字:「" + txt + "」,文字写了份量或品牌就以文字为准。" : ""}
@@ -977,20 +1013,54 @@ ${S.photoBlob ? "有照片,以照片判断种类和份量;" : ""}${txt ? "文字
   try { const opts = { modelTier: "default", cache: false }; if (S.photoBlob) opts.images = S.photoBlob; const r = await sample.json(prompt, opts); if (!r || typeof r !== "object") throw { code: "invalid_json" };
     el("mKcal").value = r0(r.kcal_high || r.kcal || 0); el("mP").value = r0(r.protein || 0); el("mC").value = r0(r.carbs || 0); el("mF").value = r0(r.fat || 0);
     el("aiItems").innerHTML = (r.items || []).map(i => `<div><span>${esc(i.name)} ${i.grams ? "· " + r0(i.grams) + "g" : ""}${i.drink ? " 🥤" : ""}</span><span class="num">${r0(i.kcal || 0)} kcal · P${r0(i.protein || 0)}</span></div>`).join("");
-    S.aiRange = r.kcal_low && r.kcal_high ? `${r0(r.kcal_low)}-${r0(r.kcal_high)} kcal` : ""; st.textContent = `${S.aiRange ? S.aiRange + " · " : ""}把握${r.confidence || "中"}${r.note ? " · " + r.note : ""} · 按高值填了,数字可改`; if (!txt && r.items && r.items.length) el("mealText").value = r.items.map(i => i.name).join(","); S.aiUsed = true;
-  } catch (e) { console.error(e); st.className = "status err"; const m = { not_granted: "你没有允许这个页面调用 Claude,手动填数字即可", rate_limited: "调用太频繁,稍等再试", image_rejected: "这张照片不行,换一张", invalid_json: "没解析出结果,再点一次", refused: "这条内容没法估算,手动填", sampling_disabled: "这个账号不能用 AI 估算" }; st.textContent = m[e && e.code] || "估算失败,手动填数字"; if (e && (e.code === "not_granted" || e.code === "sampling_disabled")) { sample = null; el("aiBtn").hidden = true; } }
+    S.aiRange = r.kcal_low && r.kcal_high ? `${r0(r.kcal_low)}-${r0(r.kcal_high)} kcal` : ""; st.textContent = `${S.aiRange ? S.aiRange + " · " : ""}把握${r.confidence || "中"}${r.note ? " · " + r.note : ""}`; if (!txt && r.items && r.items.length) el("mealText").value = r.items.map(i => i.name).join(","); S.aiUsed = true;
+    if (auto) { const okAuto = await saveMealNow(true); if (okAuto) st.textContent = `已记 ${r0(r.kcal_high || r.kcal || 0)} kcal · 点上面那条可以改`; }
+  } catch (e) { console.error(e); st.className = "status err"; const m = { not_granted: "你没有允许这个页面调用 Claude,手动填数字即可", rate_limited: "调用太频繁,稍等再试", image_rejected: "这张照片不行,换一张", invalid_json: "没解析出结果,再点一次", refused: "这条内容没法估算,手动填", sampling_disabled: "这个账号不能用 AI 估算" }; st.textContent = m[e && e.code] || "估算失败,手动填数字"; if (e && (e.code === "not_granted" || e.code === "sampling_disabled")) { sample = null; el("manualBox").hidden = false; } }
   finally { el("aiBtn").disabled = false; }
 }
-el("saveMeal").addEventListener("click", async () => {
+function openMealEdit(m) {
+  openSheet(`<h3 style="margin-bottom:10px">改这一笔</h3>
+    ${m.photo ? `<img src="${m.photo}" alt="" style="width:100%;max-height:160px;object-fit:cover;border-radius:12px;margin-bottom:10px">` : ""}
+    <div class="field"><label>吃了什么</label><input id="emText" value="${esc(m.text || "")}"></div>
+    <div class="grid4" style="margin-top:8px">
+      <div class="field"><label>kcal</label><input type="number" id="emK" inputmode="numeric" value="${r0(m.kcal || 0)}"></div>
+      <div class="field"><label>蛋白 g</label><input type="number" id="emP" inputmode="numeric" value="${r0(m.protein || 0)}"></div>
+      <div class="field"><label>碳水 g</label><input type="number" id="emC" inputmode="numeric" value="${r0(m.carbs || 0)}"></div>
+      <div class="field"><label>脂肪 g</label><input type="number" id="emF" inputmode="numeric" value="${r0(m.fat || 0)}"></div>
+    </div>
+    <div class="mini" style="margin-top:8px">${m.source === "ai" ? "这条是 AI 估的" + (m.range ? " · " + esc(m.range) : "") + ",估错了直接改" : ""}</div>
+    <button class="btn primary block" id="emSave" style="margin-top:12px">保存修改</button>
+    <button class="btn block danger" id="emDel" style="margin-top:8px">删掉这一笔</button>`);
+  el("emSave").addEventListener("click", async () => {
+    const patch = Object.assign({}, m, { text: el("emText").value.trim(), kcal: num(el("emK").value) || 0, protein: num(el("emP").value) || 0, carbs: num(el("emC").value) || 0, fat: num(el("emF").value) || 0, source: "manual", updatedAt: Date.now() });
+    delete patch.id;
+    const ok = await safe(() => dbSet("meals", m.id, patch), "保存失败");
+    if (ok !== FAIL) { closeSheet(); toast("改好了"); S.quickBuilt = false; renderFood(); }
+  });
+  el("emDel").addEventListener("click", async () => {
+    const ok = await safe(() => dbDel("meals", m.id), "删除失败");
+    if (ok !== FAIL) { closeSheet(); toast("已删"); S.quickBuilt = false; renderFood(); }
+  });
+}
+async function saveMealNow(auto) {
   const text = el("mealText").value.trim(); const kcal = num(el("mKcal").value), protein = num(el("mP").value), carbs = num(el("mC").value), fat = num(el("mF").value);
-  if (!text && !S.photoDataUrl) { toast("写点什么或拍张照"); return; } if (kcal === null && protein === null) { toast("至少填热量或蛋白"); return; }
+  if (!text && !S.photoDataUrl) { toast("写点什么或拍张照"); return false; }
+  if (kcal === null && protein === null) { toast("至少填热量或蛋白"); return false; }
   const now = new Date(); const doc = { date: S.foodDate, time: String(now.getHours()).padStart(2, "0") + ":" + String(now.getMinutes()).padStart(2, "0"), text, kcal: kcal || 0, protein: protein || 0, carbs: carbs || 0, fat: fat || 0, photo: S.photoDataUrl || null, source: S.aiUsed ? "ai" : "manual", range: S.aiUsed ? (S.aiRange || null) : null, createdAt: Date.now() };
-  el("saveMeal").disabled = true; const ok = await safe(() => dbSet("meals", uid(), doc), "保存失败(照片可能太大),再试一次"); el("saveMeal").disabled = false; if (ok === FAIL) return;
-  ["mealText", "mKcal", "mP", "mC", "mF"].forEach(i => el(i).value = ""); el("mealPreview").hidden = true; el("aiItems").innerHTML = ""; el("aiStatus").textContent = ""; S.photoBlob = null; S.photoDataUrl = null; S.aiUsed = false; S.aiRange = ""; toast("已记录"); renderFood();
-});
+  const btn = el("saveMeal"); if (btn) btn.disabled = true;
+  const ok = await safe(() => dbSet("meals", uid(), doc), "保存失败(照片可能太大),再试一次");
+  if (btn) btn.disabled = false; if (ok === FAIL) return false;
+  ["mealText", "mKcal", "mP", "mC", "mF"].forEach(i => { const e = el(i); if (e) e.value = ""; });
+  el("aiItems").innerHTML = ""; el("manualBox").hidden = true; S.photoBlob = null; S.photoDataUrl = null; S.aiUsed = false; S.aiRange = "";
+  if (!auto) { el("aiStatus").textContent = ""; toast("已记录"); }
+  await renderFood(); return true;
+}
+el("saveMeal").addEventListener("click", () => saveMealNow(false));
+
 
 /* ======================= BODY ======================= */
 el("saveKg").addEventListener("click", async () => { const kg = num(el("bKg").value); if (kg === null || kg < 40 || kg > 200) { toast("填 kg,比如 78.5"); return; } const ok = await saveBodyMerge(todayStr(), { weightKg: kg, weight: +toLb(kg).toFixed(1) }); if (ok) { toast("已记 " + kg + " kg"); renderBody(); } });
+el("kgDone").addEventListener("click", () => { el("kgDone").hidden = true; el("kgForm").hidden = false; const t = S.body.find(b => b.date === todayStr() && b.weightKg != null); if (t) el("bKg").value = (+t.weightKg).toFixed(1); el("bKg").focus(); });
 el("bKg").addEventListener("keydown", e => { if (e.key === "Enter") el("saveKg").click(); });
 function paceVerdict(ws) {
   const t = todayStr(); const a0 = avgAt(ws, t), a7 = avgAt(ws, addDays(t, -7)), a14 = avgAt(ws, addDays(t, -14));
@@ -1010,6 +1080,9 @@ async function renderBody() {
   el("bKg").value = today && kgOf(today) != null ? kgOf(today).toFixed(1) : "";
   const ws = weightSeries(); const last = ws[ws.length - 1];
   el("kgHint").textContent = today && kgOf(today) != null ? "今天已记,再填会覆盖" : last ? `上次 ${last.date.slice(5)} · ${last.kg.toFixed(1)} kg` : "起床、排便后、吃喝前,每天同一条件";
+  { const has = today && kgOf(today) != null;
+    el("kgDone").hidden = !has; el("kgForm").hidden = !!has;
+    if (has) el("kgDoneVal").innerHTML = kgOf(today).toFixed(1) + '<small style="font-size:14px;color:var(--ink3);margin-left:4px">kg</small>'; }
   const win = ws.filter(x => x.date >= addDays(todayStr(), -6)); const avg7 = avgAt(ws, todayStr());
   el("avgW").innerHTML = (avg7 ? avg7.toFixed(1) : last ? last.kg.toFixed(1) : "--") + `<small>kg</small>`; el("avgW").previousElementSibling.textContent = avg7 ? "7 天均重" : "最新体重(均值要 4 次)";
   el("avgWkg").textContent = avg7 ? `近 7 天称了 ${win.length} 次 · ${toLb(avg7).toFixed(1)} lb` : win.length ? `近 7 天只称了 ${win.length} 次,均值先不算` : "还没记体重";
@@ -1030,7 +1103,8 @@ async function renderBody() {
   const fat0 = fatKg(base), lean0 = leanKg(base), fatT = tKg * T.bfPct / 100, leanT = tKg - fatT;
   const bar = (label, v0, v1, vt, goodDown) => { const mx = Math.max(v0, v1 ?? v0, vt) * 1.05; const p = x => x / mx * 100; const d = v1 != null ? v1 - v0 : null; const ok = d == null ? null : goodDown ? d <= 0 : d >= -1; return `<div class="dbar"><span>${label}</span><div class="track"><i style="left:0;width:${p(v0)}%;background:var(--surface2);border:1px solid var(--line)"></i><i style="left:0;width:${p(v1 ?? v0)}%;background:${ok === false ? "var(--warn)" : "var(--accent)"};opacity:.9"></i><i style="left:${p(vt)}%;width:2px;background:var(--good)"></i></div><span class="num" style="text-align:right">${v1 != null ? `${v1.toFixed(1)} <span style="color:${ok ? "var(--good)" : "var(--warn)"}">${d >= 0 ? "+" : ""}${d.toFixed(1)}</span>` : `${v0.toFixed(1)}`}</span></div>`; };
   el("deltaBars").innerHTML = bar("脂肪 kg", fat0, cur ? fatKg(cur) : null, fatT, true) + bar("瘦体重 kg", lean0, cur ? leanKg(cur) : null, leanT, false) + `<div class="mini">灰=基线 ${base.date.slice(5)} · 彩=最新 · 绿线=目标(脂肪 ${fatT.toFixed(1)} / 瘦体重守住 ${lean0.toFixed(1)})${cur && leanKg(cur) - lean0 < -1 ? " · 瘦体重掉了 1 kg 以上:蛋白拉到 190,孤立动作练到剩 0-1 次" : ""}</div>`;
-  el("scanList").innerHTML = scans.map(b => `<div class="scan">${b.scanPhoto ? `<img src="${b.scanPhoto}" alt="">` : `<div class="icon">📄</div>`}<div style="flex:1"><div class="num" style="font-weight:600">${b.date}</div><div class="mini num">${kgS(b) != null ? kgS(b).toFixed(1) + " kg · " : ""}体脂 ${b.bf}%${b.lbm != null ? " · 瘦体重 " + b.lbm + " lb" : ""}${b.visceral != null ? " · 内脏 " + b.visceral : ""}</div></div></div>`).join("");
+  el("scanList").innerHTML = scans.map(b => `<div class="scan" data-scan="${b.date}" style="cursor:pointer">${b.scanPhoto ? `<img src="${b.scanPhoto}" alt="">` : `<div class="icon">📄</div>`}<div style="flex:1"><div class="num" style="font-weight:600">${b.date}</div><div class="mini num">${kgS(b) != null ? kgS(b).toFixed(1) + " kg · " : ""}体脂 ${b.bf}%${b.lbm != null ? " · 瘦体重 " + b.lbm + " lb" : ""}${b.visceral != null ? " · 内脏 " + b.visceral : ""}</div><div class="mini">点一下可改</div></div></div>`).join("");
+  el("scanList").querySelectorAll("[data-scan]").forEach(x => x.addEventListener("click", () => openScanEdit(S.body.find(b => b.date === x.dataset.scan))));
   // strength
   const names = []; for (const k of PLAN.order) for (const e of PLAN.days[k].ex) names.push(e.n);
   const rows = names.map(n => ({ n, h: exHistory(n).filter(x => x.e1rm) })).filter(x => x.h.length);
@@ -1065,8 +1139,8 @@ el("saveTape").addEventListener("click", async () => { const d = el("tDate").val
 el("scanPhoto").addEventListener("change", async e => {
   const f = e.target.files && e.target.files[0]; if (!f) return; const st = el("scanStatus"); st.className = "status"; st.textContent = "处理照片…";
   try {
-    const { blob, dataUrl } = await compressImage(f, 1000, 0.7); S.scanDataUrl = dataUrl; const pv = el("scanPreview"); pv.src = dataUrl; pv.hidden = false;
-    if (!(sample && canImage)) { st.textContent = "照片已存,数字请手填"; return; }
+    const { blob, dataUrl } = await compressImage(f, 1000, 0.7); S.scanDataUrl = dataUrl;
+    if (!(sample && canImage)) { st.textContent = "照片已存,数字请手填"; el("scanManual").open = true; return; }
     st.textContent = "AI 读数中…";
     const r = await sample.json(`这是一张身体成分扫描单照片(Evolt 360 或 InBody)。逐字读数,不要推算、不要换算单位。只返回 JSON:{"device":"evolt|inbody|unknown","dateRaw":"日期原文原样抄写","weight":{"v":数值,"u":"kg|lb"},"bfPct":体脂百分数,"leanMass":{"v":数值,"u":"kg|lb"},"smm":{"v":数值,"u":"kg|lb"},"tbw":{"v":数值,"u":"kg|lb"},"visceralLevel":内脏脂肪等级整数或 null}。读不到填 null,不要猜。忽略基础代谢、代谢年龄、评分、分段、蛋白质、无机盐、建议摄入量。只返回 JSON。`, { images: blob, modelTier: "default", cache: false });
     if (!r || typeof r !== "object") throw { code: "invalid_json" };
@@ -1080,18 +1154,40 @@ el("scanPhoto").addEventListener("change", async e => {
     if (r.visceralLevel != null && isFinite(+r.visceralLevel)) el("bVis").value = r0(+r.visceralLevel);
     let dateNote = "";
     if (r.dateRaw) { const m = String(r.dateRaw).match(/(\d{1,4})[-\/.](\d{1,2})[-\/.](\d{2,4})/); if (m) { let y, mo, d; if (m[1].length === 4) { y = +m[1]; mo = +m[2]; d = +m[3]; } else if (+m[1] > 12) { d = +m[1]; mo = +m[2]; y = +m[3]; } else if (+m[2] > 12) { mo = +m[1]; d = +m[2]; y = +m[3]; } else { mo = null; } if (mo) { if (y < 100) y += 2000; el("bScanDate").value = `${y}-${String(mo).padStart(2, "0")}-${String(d).padStart(2, "0")}`; } else dateNote = " · 日期看不准,手选"; } }
-    st.className = bad.length ? "status err" : "status"; st.textContent = (bad.length ? `${bad.join("、")}读数异常已跳过 · ` : "已读出,") + "核对一下再点保存" + dateNote;
+    const okSave = await el("saveScan") && await doSaveScan(true);
+    st.className = bad.length ? "status err" : "status";
+    st.textContent = okSave ? ((bad.length ? `${bad.join("、")}没读出来 · ` : "已读出并保存 · ") + "读错了点下面那条记录改" + dateNote) : ((bad.length ? `${bad.join("、")}读数异常 · ` : "") + "自动保存没成功,展开下面自己填" + dateNote);
+    if (!okSave) el("scanManual").open = true;
   } catch (err) { console.error(err); st.className = "status err"; st.textContent = err && err.code === "not_granted" ? "没允许调用 Claude,照片已存,手填数字" : "读数失败,照片已存,手填数字"; }
   e.target.value = "";
 });
-el("saveScan").addEventListener("click", async () => {
+el("saveScan").addEventListener("click", () => doSaveScan(false));
+function openScanEdit(b) {
+  if (!b) return;
+  const F = [["esKg", "体重 kg", b.scanKg], ["esBf", "体脂 %", b.bf], ["esLbm", "瘦体重 lb", b.lbm], ["esSmm", "骨骼肌 lb", b.smm], ["esVis", "内脏等级", b.visceral], ["esTbw", "体水分 lb", b.tbw]];
+  openSheet(`<h3 style="margin-bottom:4px">改扫描记录</h3><div class="mini" style="margin-bottom:10px">${esc(b.date)} · AI 读错了就在这改</div>
+    ${b.scanPhoto ? `<img src="${b.scanPhoto}" alt="" style="width:100%;max-height:220px;object-fit:contain;border-radius:12px;background:var(--surface2);margin-bottom:10px">` : ""}
+    <div class="grid3">${F.map(x => `<div class="field"><label>${x[1]}</label><input type="number" step="0.1" inputmode="decimal" id="${x[0]}" value="${x[2] != null ? x[2] : ""}"></div>`).join("")}</div>
+    <button class="btn primary block" id="esSave" style="margin-top:12px">保存修改</button>
+    <button class="btn block danger" id="esClear" style="margin-top:8px">清掉这条扫描</button>`);
+  el("esSave").addEventListener("click", async () => {
+    const ok = await saveBodyMerge(b.date, { scanKg: num(el("esKg").value), bf: num(el("esBf").value), lbm: num(el("esLbm").value), smm: num(el("esSmm").value), visceral: num(el("esVis").value), tbw: num(el("esTbw").value) });
+    if (ok) { closeSheet(); toast("改好了"); renderBody(); }
+  });
+  el("esClear").addEventListener("click", async () => {
+    const ok = await saveBodyMerge(b.date, { scanKg: null, bf: null, lbm: null, smm: null, visceral: null, tbw: null, scanPhoto: null });
+    if (ok) { closeSheet(); toast("已清除"); renderBody(); }
+  });
+}
+async function doSaveScan(auto) {
   const d = el("bScanDate").value || todayStr(); const kg = num(el("bScanKg").value);
   const patch = { scanKg: kg, bf: num(el("bBf").value), lbm: num(el("bLbm").value), smm: num(el("bSmm").value), visceral: num(el("bVis").value), tbw: num(el("bTbw").value), scanPhoto: S.scanDataUrl || null };
-  if (Object.values(patch).every(v => v === null)) { toast("先填一项"); return; }
-  const ok = await saveBodyMerge(d, patch); if (!ok) return;
+  if (Object.values(patch).every(v => v === null || v === undefined)) { if (!auto) toast("先填一项"); return false; }
+  const ok = await saveBodyMerge(d, patch); if (!ok) return false;
   ["bScanDate", "bScanKg", "bBf", "bLbm", "bSmm", "bVis", "bTbw"].forEach(i => el(i).value = ""); el("scanPreview").hidden = true; S.scanDataUrl = null; el("scanStatus").textContent = "";
-  toast("已保存扫描 " + d); renderBody();
-});
+  if (!auto) toast("已保存扫描 " + d);
+  renderBody(); return true;
+}
 
 /* ======================= PLAN (calendar) ======================= */
 function dayIndex(dateStr) { return dayDiff(PLAN.startDate, dateStr); }
@@ -1151,11 +1247,55 @@ function drawNutri() {
   PLAN.nutrition.forEach(n => { const x = px + (n.from - 1) * cw, x2 = px + Math.min(n.to, 24) * cw; s += `<text x="${(x + x2) / 2}" y="${Y(n.kcal) - 4}" text-anchor="middle" font-size="11" font-weight="700" fill="var(--ink)">${n.kcal} · 蛋白 ${n.protein}</text>`; });
   el("nutriChart").innerHTML = s;
 }
+async function renderCoach() {
+  const box = el("planDays");
+  if (!sample) { box.innerHTML = `<div class="card"><h3>问教练</h3><div class="faint" style="margin-top:6px">这个页面没拿到 Claude 的调用权限,教练对话用不了。每天练什么在上面日历里点日期看。</div></div>`; return; }
+  const log = S.coach || [];
+  box.innerHTML = `<div class="card">
+    <h3>问教练</h3>
+    <div class="faint" style="margin:4px 0 10px">它知道你的计划、最近的体重和训练。比如:这周该不该加重量 / 腰围两周没动怎么办 / 明天出差怎么吃 / 肩膀有点疼还能练吗</div>
+    <div id="coachLog">${log.map(c => `<div style="margin-bottom:12px"><div class="feel" style="margin-bottom:6px">${esc(c.q)}</div><div class="note">${esc(c.a)}</div></div>`).join("")}</div>
+    <textarea id="coachQ" rows="2" placeholder="想问什么?"></textarea>
+    <div class="status" id="coachStatus" style="margin-top:6px"></div>
+    <button class="btn primary block" id="coachSend" style="margin-top:8px">问教练</button>
+  </div>`;
+  el("coachSend").addEventListener("click", askCoach);
+}
+async function askCoach() {
+  const q = el("coachQ").value.trim(); if (!q) { toast("先写点什么"); return; }
+  const btn = el("coachSend"), st = el("coachStatus"); btn.disabled = true; st.className = "status"; st.textContent = "教练在想…";
+  const w = weekNo(), T = nutritionFor(w), P = PLAN;
+  const ws = weightSeries().slice(-14).map(x => `${x.date.slice(5)} ${x.kg.toFixed(1)}`).join(" / ");
+  const recent = (S.workouts || []).slice(0, 5).map(x => `${x.date.slice(5)} ${x.dayName}`).join(" / ");
+  const ctx = `【计划】${P.block || ""} 第 ${w} 周 / 共 24 周。目标:${P.goal || ""}
+基线 ${P.baseline ? `${P.baseline.weightLb} lb / 体脂 ${P.baseline.bfPct}% / 腰 ${P.baseline.waistCm} cm` : "无"};目标 ${P.targets.weightLb} lb / 体脂 ${P.targets.bfPct}% / 腰 ${P.targets.waistCm} cm,${P.targets.goalDate}
+本周热量 ${T.kcal} kcal / 蛋白 ${T.protein} g
+【近 14 天体重 kg】${ws || "还没记"}
+【最近训练】${recent || "还没练"}
+【加重规则】${(P.rules || []).slice(0, 4).join(" ")}`;
+  try {
+    let acc = ""; const baseLog = el("coachLog").innerHTML;
+    const r = await sample(`你是这个人的力量与体成分教练。下面是他的计划和最近数据,然后是他的问题。
+
+${ctx}
+
+【他问】${q}
+
+要求:用中文,口语,直接给判断和动作,不要罗列免责声明。有数字就用他的数字。他问的事情如果数据不够就说缺什么。不要超过 200 字。涉及疼痛、受伤、疾病、用药,先让他去看医生,再给保守建议。`,
+      { modelTier: "default", onText: ({ text }) => { acc = text; st.textContent = ""; const L = el("coachLog"); L.innerHTML = baseLog; L.insertAdjacentHTML("beforeend", `<div style="margin-bottom:12px"><div class="feel" style="margin-bottom:6px">${esc(q)}</div><div class="note">${esc(acc)}</div></div>`); } });
+    const ans = (r && r.text) || acc;
+    S.coach = (S.coach || []).concat([{ q, a: ans }]).slice(-6);
+    safe(() => dbSet("coach", uid(), { date: todayStr(), q, a: ans, week: w, createdAt: Date.now() }), null);
+    el("coachQ").value = ""; st.textContent = ""; renderCoach();
+  } catch (e) {
+    console.error(e); st.className = "status err";
+    st.textContent = { not_granted: "你没允许这个页面调用 Claude", rate_limited: "问得太频繁,等一下", cancelled: "取消了" }[e && e.code] || "教练没答上来,再试一次";
+  } finally { btn.disabled = false; }
+}
 function renderPlan() {
   const P = PLAN; const w = weekNo();
   renderCal(); drawTimeline(); drawNutri();
-  el("planDays").innerHTML = [...P.order, "cardio"].map(k => { const d = P.days[k]; return `<div class="card"><h3>${esc(d.name)}</h3><div class="faint" style="margin-bottom:6px">${esc(d.focus || "")}</div>${d.ex.map(e => `<div class="plan-ex" data-open="${esc(e.n)}"><div class="thumb">${illus(e, true)}</div><span>${esc(e.n)}<div class="mini">${esc(e.muscles || "")}${S.weights[e.n] ? " · 当前 " + S.weights[e.n].w + " lb" : e.start != null ? " · 起始 " + e.start + " lb" : ""}</div></span><span class="p">${setsFor(e, Math.max(1, w))}×${esc(repRangeFor(e, w))}</span></div>`).join("")}</div>`; }).join("");
-  el("planDays").querySelectorAll("[data-open]").forEach(x => x.addEventListener("click", () => showExercise(x.dataset.open)));
+  renderCoach();
   const wu = P.warmup || {}, st = P.stretch || {}; const mobLine = m => `<div class="plan-ex" data-open="${esc(m.n)}"><div class="thumb">${illus(m, true)}</div><span>${esc(m.n)}<div class="mini">${esc(m.r || "")}</div></span></div>`;
   el("planWarm").innerHTML = `<div class="mini">${esc(wu.common || "")}</div>` + ["U1", "U2", "U3", "L"].filter(k => wu[k]).map(k => `<div class="lbl2">${DAY_LBL[k]}日热身</div>${wu[k].map(mobLine).join("")}`).join("") + `<div class="mini" style="margin-top:6px">${esc(wu.ramp || "")}</div><div class="lbl2">上肢日拉伸</div>${(st.upper || []).map(mobLine).join("")}<div class="lbl2">下肢日拉伸</div>${(st.lower || []).map(mobLine).join("")}`;
   el("planWarm").querySelectorAll("[data-open]").forEach(x => x.addEventListener("click", () => showExercise(x.dataset.open)));
