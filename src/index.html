@@ -254,7 +254,7 @@ details.sub summary::-webkit-details-marker{display:none}
     <div class="stats" id="stats" style="margin-bottom:12px"></div>
     <div class="chips" id="dayChips"></div>
     <div class="card" id="workoutCard"></div>
-    <button class="btn primary block" id="saveWorkout">保存这次训练</button>
+    <div class="mini" id="wSaveState" style="text-align:center;padding:6px 0">打勾就会自动存,不用管</div>
     <div class="card" style="margin-top:14px">
       <div class="row between" style="margin-bottom:6px"><h3>最近训练</h3><span class="faint" id="wCount"></span></div>
       <div id="workoutHistory" class="faint">还没有记录</div>
@@ -408,6 +408,15 @@ details.sub summary::-webkit-details-marker{display:none}
       <svg class="tl" id="timeline" viewBox="0 0 360 120"></svg>
     </div>
     <div class="card">
+      <div class="row between" style="margin-bottom:2px"><h3>你会走到哪</h3><span class="faint" id="projNote"></span></div>
+      <div class="eyebrow" style="margin:8px 0 2px">体重</div>
+      <svg class="chart" id="projW" viewBox="0 0 340 150" preserveAspectRatio="xMidYMid meet"></svg>
+      <div class="mini" id="projWTxt" style="margin-top:4px"></div>
+      <div class="eyebrow" style="margin:14px 0 2px">力量(所有动作平均,相对起始重量)</div>
+      <svg class="chart" id="projS" viewBox="0 0 340 120" preserveAspectRatio="xMidYMid meet"></svg>
+      <div class="mini" id="projSTxt" style="margin-top:4px"></div>
+    </div>
+    <div class="card">
       <div class="row between"><h3>饮食阶梯</h3><span class="faint">kcal / 蛋白 g</span></div>
       <svg class="tl" id="nutriChart" viewBox="0 0 360 110"></svg>
     </div>
@@ -433,25 +442,25 @@ details.sub summary::-webkit-details-marker{display:none}
 <script>
 const MOBILITY = {
   bike: { n: "单车 3 分钟", en: "stationary bike warm up", r: "3 分钟,微微出汗", feel: "全身热起来,心率上到 110-120", warn: "不是训练,别骑猛;坐直别趴", cues: ["阻力小,转速 80-90", "最后 30 秒稍微加速"], pose: ["S", [96, 84, 25, 70, 40, 75, 85, { seat: 1 }], [96, 84, 25, 110, -20, 75, 85, { seat: 1 }]] },
-  breath: { n: "90/90 呼吸髋抬", en: "90 90 hip lift breathing", r: "5 次深呼吸 × 2", feel: "呼气到底时腹部收紧、腰贴地,大腿后侧微微发力把脚跟往凳子里勾", warn: "腰离地就是骨盆又前倾了;不要憋气", cues: ["仰卧,脚踩在凳子上,膝髋各 90 度", "脚跟往凳子里轻轻勾,臀部微微抬起 1 cm", "用鼻子吸 4 秒,用嘴呼 6 秒,呼到底停 2 秒", "这是骨盆前倾的第一动作,每天做"], pose: ["S", [90, 118, -90, 180, 90, 90, 90, { bench: -90, footbench: 1 }], [90, 114, -92, 178, 92, 90, 90, { bench: -90, footbench: 1 }]] },
-  hipflex: { n: "半跪髋屈肌拉伸", en: "half kneeling hip flexor stretch", r: "30 秒 × 2/侧", feel: "后腿那侧的大腿前侧根部(髂腰肌)有拉伸感", warn: "塌腰就没拉到;先臀夹紧、骨盆后倾再往前", cues: ["后膝跪地,前脚在前,骨盆摆正", "后腿臀部夹紧,骨盆往后卷", "身体微微前移,同侧手举高向对侧弯", "拉的是髂腰肌,不是压腿"], pose: ["S", [98, 96, 0, 90, 0, 0, 0, { kneel: 1 }], [104, 96, -8, 88, 5, 178, 178, { kneel: 1, head: -6 }]] },
-  deadbug: { n: "负重死虫", en: "dead bug exercise", r: "8 次/侧 × 2", feel: "腹部全程绷紧,腰紧贴地面", warn: "腰弓起来就是失败,缩小幅度;呼气伸出去", cues: ["仰卧,手臂举向天花板,膝髋 90 度", "呼气,同时伸对侧手和腿,慢慢放到接近地面", "腰全程压地,吸气收回", "手里握个轻哑铃或矿泉水瓶就是负重"], pose: ["S", [100, 116, -90, 180, 90, 180, 180, { bench: -90, leg2: [180, 90] }], [100, 116, -90, 100, 100, -90, -90, { bench: -90, leg2: [180, 90] }]] },
-  openbook: { n: "胸椎开书 + 泡沫轴伸展", en: "thoracic spine open book stretch", r: "8 次/侧 + 泡沫轴 8 次", feel: "上背和胸口打开,肩胛之间有转动感", warn: "转的是胸椎不是腰,膝盖夹紧不动;头跟着手走", cues: ["侧卧,双膝并拢屈 90 度", "上面的手臂像翻书一样向后打开,眼睛跟着手", "打开到底停 2 秒,回来", "然后泡沫轴横放在上背,双手抱头向后伸展 8 次"], pose: ["S", [100, 116, -90, 92, 55, 90, 90, { bench: -90 }], [100, 116, -90, 92, 55, -90, -90, { bench: -90 }]] },
-  wallangel: { n: "墙天使", en: "wall angel exercise", r: "慢速 8 次 × 2", feel: "肩胛下角往下夹,后脑、上背、腰三点贴墙", warn: "腰离墙就是在代偿;手臂贴不住墙不要硬掰", cues: ["背靠墙,脚离墙一脚,膝微屈", "手臂 W 型贴墙,肘和手背尽量不离墙", "慢慢向上滑成 Y 型,再滑回来", "全程肋骨下压"], pose: ["F", [70, 175, { wall: 1 }], [150, 165, { wall: 1 }]] },
-  chin: { n: "下巴内收 + 俯卧 Y/T", en: "chin tuck exercise", r: "内收 5 秒 × 10;俯卧 Y、T 各 12", feel: "颈前深层肌肉收紧,后脑往上顶,颈后拉长", warn: "不是低头,是把头往后水平推;不要用力过猛", cues: ["站直,想象头顶有线往上拉", "下巴水平往后收,像做双下巴,停 5 秒", "然后俯卧在凳上,手臂举成 Y 和 T,拇指朝上各 12 次,练下斜方"], pose: ["S", [100, 74, 0, 0, 0, 0, 0, { head: 38 }], [100, 74, 0, 0, 0, 0, 0, { head: -6 }]] },
-  doorway: { n: "门框胸肌拉伸", en: "doorway pec stretch", r: "高、中、低各 30 秒", feel: "胸和肩前侧被拉开", warn: "肩前面刺痛就退一点;身体不要扭", cues: ["前臂贴门框,肘与肩同高或略低起步,肩前不适就再放低", "身体向前一小步,胸口打开", "换手肘的高度做三个角度", "圆肩前伸头的直接对手"], pose: ["S", [100, 74, 0, 0, 0, -90, 180, { frame: 1 }], [104, 74, 12, 0, 0, -100, 175, { frame: 1 }]] },
-  bandrot: { n: "弹力带肩外旋", en: "band external rotation", r: "15 次 × 2", feel: "肩后侧深处(肩袖)发力,肩胛保持不动", warn: "肘紧贴身体不许离开;不用大重量,轻带就行", cues: ["双手握带,肘弯 90 度贴在身体两侧,掌心朝上", "前臂向两侧外旋,把带拉开", "肩胛不动,只转肩关节", "推举日前的必做热身"], pose: ["F", [4, -55, { band: 1 }], [4, 80, { band: 1 }]] },
-  facepull_w: { n: "面拉空杆 15 次", en: "face pull warm up", r: "轻重量 15 次", feel: "后束和肩胛中间热起来", warn: "轻,这是热身", cues: ["绳索拉向脸,肘高于手", "顶端停 1 秒"], pose: ["S", [96, 74, 0, 0, 0, 88, 88, { cable: [192, 36] }], [96, 74, 0, 0, 0, -75, 100, { cable: [192, 36] }]] },
+  breath: { n: "仰躺呼吸 · 把腰贴地", en: "90 90 hip lift breathing", r: "5 次深呼吸 × 2", feel: "呼气到底时腹部收紧、腰贴地,大腿后侧微微发力把脚跟往凳子里勾", warn: "腰离地就是骨盆又前倾了;不要憋气", cues: ["仰卧,脚踩在凳子上,膝髋各 90 度", "脚跟往凳子里轻轻勾,臀部微微抬起 1 cm", "用鼻子吸 4 秒,用嘴呼 6 秒,呼到底停 2 秒", "这是骨盆前倾的第一动作,每天做"], pose: ["S", [90, 118, -90, 180, 90, 90, 90, { bench: -90, footbench: 1 }], [90, 114, -92, 178, 92, 90, 90, { bench: -90, footbench: 1 }]] },
+  hipflex: { n: "半跪拉大腿根", en: "half kneeling hip flexor stretch", r: "30 秒 × 2/侧", feel: "后腿那侧的大腿前侧根部(髂腰肌)有拉伸感", warn: "塌腰就没拉到;先臀夹紧、骨盆后倾再往前", cues: ["后膝跪地,前脚在前,骨盆摆正", "后腿臀部夹紧,骨盆往后卷", "身体微微前移,同侧手举高向对侧弯", "拉的是髂腰肌,不是压腿"], pose: ["S", [98, 96, 0, 90, 0, 0, 0, { kneel: 1 }], [104, 96, -8, 88, 5, 178, 178, { kneel: 1, head: -6 }]] },
+  deadbug: { n: "仰躺对角伸手伸腿", en: "dead bug exercise", r: "8 次/侧 × 2", feel: "腹部全程绷紧,腰紧贴地面", warn: "腰弓起来就是失败,缩小幅度;呼气伸出去", cues: ["仰卧,手臂举向天花板,膝髋 90 度", "呼气,同时伸对侧手和腿,慢慢放到接近地面", "腰全程压地,吸气收回", "手里握个轻哑铃或矿泉水瓶就是负重"], pose: ["S", [100, 116, -90, 180, 90, 180, 180, { bench: -90, leg2: [180, 90] }], [100, 116, -90, 100, 100, -90, -90, { bench: -90, leg2: [180, 90] }]] },
+  openbook: { n: "侧躺转体开胸", en: "thoracic spine open book stretch", r: "8 次/侧 + 泡沫轴 8 次", feel: "上背和胸口打开,肩胛之间有转动感", warn: "转的是胸椎不是腰,膝盖夹紧不动;头跟着手走", cues: ["侧卧,双膝并拢屈 90 度", "上面的手臂像翻书一样向后打开,眼睛跟着手", "打开到底停 2 秒,回来", "然后泡沫轴横放在上背,双手抱头向后伸展 8 次"], pose: ["S", [100, 116, -90, 92, 55, 90, 90, { bench: -90 }], [100, 116, -90, 92, 55, -90, -90, { bench: -90 }]] },
+  wallangel: { n: "靠墙滑手臂", en: "wall angel exercise", r: "慢速 8 次 × 2", feel: "肩胛下角往下夹,后脑、上背、腰三点贴墙", warn: "腰离墙就是在代偿;手臂贴不住墙不要硬掰", cues: ["背靠墙,脚离墙一脚,膝微屈", "手臂 W 型贴墙,肘和手背尽量不离墙", "慢慢向上滑成 Y 型,再滑回来", "全程肋骨下压"], pose: ["F", [70, 175, { wall: 1 }], [150, 165, { wall: 1 }]] },
+  chin: { n: "收下巴 + 趴姿抬手臂", en: "chin tuck exercise", r: "内收 5 秒 × 10;俯卧 Y、T 各 12", feel: "颈前深层肌肉收紧,后脑往上顶,颈后拉长", warn: "不是低头,是把头往后水平推;不要用力过猛", cues: ["站直,想象头顶有线往上拉", "下巴水平往后收,像做双下巴,停 5 秒", "然后俯卧在凳上,手臂举成 Y 和 T,拇指朝上各 12 次,练下斜方"], pose: ["S", [100, 74, 0, 0, 0, 0, 0, { head: 38 }], [100, 74, 0, 0, 0, 0, 0, { head: -6 }]] },
+  doorway: { n: "门框拉开胸口", en: "doorway pec stretch", r: "高、中、低各 30 秒", feel: "胸和肩前侧被拉开", warn: "肩前面刺痛就退一点;身体不要扭", cues: ["前臂贴门框,肘与肩同高或略低起步,肩前不适就再放低", "身体向前一小步,胸口打开", "换手肘的高度做三个角度", "圆肩前伸头的直接对手"], pose: ["S", [100, 74, 0, 0, 0, -90, 180, { frame: 1 }], [104, 74, 12, 0, 0, -100, 175, { frame: 1 }]] },
+  bandrot: { n: "弹力带外转肩", en: "band external rotation", r: "15 次 × 2", feel: "肩后侧深处(肩袖)发力,肩胛保持不动", warn: "肘紧贴身体不许离开;不用大重量,轻带就行", cues: ["双手握带,肘弯 90 度贴在身体两侧,掌心朝上", "前臂向两侧外旋,把带拉开", "肩胛不动,只转肩关节", "推举日前的必做热身"], pose: ["F", [4, -55, { band: 1 }], [4, 80, { band: 1 }]] },
+  facepull_w: { n: "轻重量拉向脸 15 次", en: "face pull warm up", r: "轻重量 15 次", feel: "后束和肩胛中间热起来", warn: "轻,这是热身", cues: ["绳索拉向脸,肘高于手", "顶端停 1 秒"], pose: ["S", [96, 74, 0, 0, 0, 88, 88, { cable: [192, 36] }], [96, 74, 0, 0, 0, -75, 100, { cable: [192, 36] }]] },
   bridge: { n: "臀桥 10 次", en: "glute bridge exercise", r: "10 次,顶端停 2 秒", feel: "臀部夹到最硬,腘绳微微参与,腰没感觉", warn: "腰有感觉就是顶太高,骨盆后倾再顶", cues: ["仰卧屈膝,脚跟靠近臀部", "呼气,骨盆先后卷,再把臀顶起", "顶端臀夹紧停 2 秒,慢放", "下肢日热身,唤醒臀"], pose: ["S", [100, 124, -90, 140, 15, 60, 60, { bench: -90 }], [96, 104, -124, 128, 12, 60, 60, { bench: -90 }]] },
   airsquat: { n: "徒手深蹲 8 次", en: "bodyweight squat form", r: "8 次 × 2,慢", feel: "股四头和臀,脚跟不离地", warn: "膝盖不内扣;腰不塌", cues: ["脚略宽于肩,脚尖微外", "臀往后往下,膝顺着脚尖方向", "蹲到平行,站起臀夹紧"], pose: ["S", [100, 74, 5, 0, 0, 85, 85, {}], [92, 96, 35, 75, -15, 85, 85, {}]] },
-  lat: { n: "抓杆背阔肌拉伸", en: "lat stretch hanging", r: "30 秒/侧", feel: "腋下到腰的一整条被拉长", warn: "肩不要往上顶到耳朵", cues: ["单手抓杆或门框,身体往后往下坐", "同侧髋往外推", "另一手扶住"], pose: ["S", [88, 80, 22, 10, 0, 170, 170, { frame: 1 }], [86, 84, 26, 12, 0, 172, 172, { frame: 1 }]] },
-  tri: { n: "过顶三头拉伸", en: "overhead triceps stretch", r: "30 秒/侧", feel: "上臂后侧被拉长", warn: "肋骨下压,不要跟着后仰", cues: ["一手举高,肘弯,手摸对侧肩胛", "另一手轻压肘向下向后"], pose: ["S", [100, 74, 0, 0, 0, 175, -40, {}], [100, 74, 0, 0, 0, 178, -50, {}]] },
-  bi: { n: "扶墙二头拉伸", en: "wall biceps stretch", r: "30 秒/侧", feel: "上臂前侧和肩前被拉长", warn: "肩前刺痛就退一点", cues: ["手掌贴墙在身后,与肩同高,拇指朝下", "身体慢慢向另一侧转"], pose: ["S", [100, 74, 0, 0, 0, -90, -90, { frame: 1 }], [104, 74, 8, 0, 0, -95, -95, { frame: 1 }]] },
-  neck: { n: "下巴内收 + 颈侧拉伸", en: "chin tuck and neck stretch", r: "内收 5 秒 × 5;侧拉 20 秒/侧", feel: "颈后拉长,颈侧被拉开", warn: "轻,颈椎不做大幅度", cues: ["下巴水平后收 5 秒 × 5", "头向一侧倒,同侧手轻压,对侧肩下沉"], pose: ["S", [100, 74, 0, 0, 0, 0, 0, { head: 38 }], [100, 74, 0, 0, 0, 0, 0, { head: -6 }]] },
-  fig4: { n: "仰卧 4 字臀拉伸", en: "supine figure four stretch", r: "30 秒/侧", feel: "臀部外侧深处", warn: "腰贴地,不要憋气", cues: ["仰卧,一脚踝搭在另一膝上", "双手抱住下面那条腿的膝后,往胸口拉", "呼气,让臀部松开"], pose: ["S", [100, 116, -90, 180, 90, 150, 100, { bench: -90, leg2: [150, 60] }], [100, 116, -90, 190, 100, 150, 105, { bench: -90, leg2: [140, 60] }]] },
-  ham: { n: "站姿腘绳拉伸", en: "standing hamstring stretch", r: "30 秒/侧", feel: "大腿后侧被拉长,不是膝后", warn: "背保持平,屈髋不弯腰", cues: ["一脚跟点地在前,腿伸直,脚尖勾起", "臀往后推,背平着往前倾", "手扶在前腿上"], pose: ["S", [100, 74, 10, 0, 0, 0, 0, { leg2: [30, 30] }], [92, 78, 50, 0, 0, 30, 60, { leg2: [30, 30] }]] },
-  calf: { n: "靠墙小腿拉伸", en: "wall calf stretch", r: "30 秒/侧", feel: "后腿小腿肚被拉长", warn: "后脚跟不离地,脚尖朝前", cues: ["双手扶墙,一腿在后伸直", "前腿弯,身体往前压", "后脚跟踩实"], pose: ["S", [100, 76, 20, 25, 25, 90, 90, { frame: 1, leg2: [-20, -20] }], [104, 76, 25, 30, 30, 92, 92, { frame: 1, leg2: [-22, -22] }]] },
-  rectus: { n: "沙发式股直肌拉伸", en: "couch stretch rectus femoris", r: "30 秒/侧", feel: "大腿前侧中段到膝上被拉长,不是膝盖疼", warn: "腰一塌就等于没拉到,先臀夹紧骨盆后倾再前移;膝盖前侧疼就把后脚放低或垫毛巾", cues: ["半跪,后脚背搭在凳子或墙上", "后侧臀夹紧,骨盆往后卷,肋骨下压", "躯干直起来,不要靠塌腰去加大幅度", "股直肌跨髋跨膝,是半跪拉伸拉不到的那一块,骨盆前倾的人最缺这个"], pose: ["S", [104, 96, -4, 88, 4, 0, 0, { leg2: [-22, -165], box: [58, 96, 26, 36] }], [110, 96, -10, 84, 8, 0, 0, { leg2: [-28, -160], box: [58, 96, 26, 36] }]] },
+  lat: { n: "抓杆吊着拉背", en: "lat stretch hanging", r: "30 秒/侧", feel: "腋下到腰的一整条被拉长", warn: "肩不要往上顶到耳朵", cues: ["单手抓杆或门框,身体往后往下坐", "同侧髋往外推", "另一手扶住"], pose: ["S", [88, 80, 22, 10, 0, 170, 170, { frame: 1 }], [86, 84, 26, 12, 0, 172, 172, { frame: 1 }]] },
+  tri: { n: "举手拉上臂后侧", en: "overhead triceps stretch", r: "30 秒/侧", feel: "上臂后侧被拉长", warn: "肋骨下压,不要跟着后仰", cues: ["一手举高,肘弯,手摸对侧肩胛", "另一手轻压肘向下向后"], pose: ["S", [100, 74, 0, 0, 0, 175, -40, {}], [100, 74, 0, 0, 0, 178, -50, {}]] },
+  bi: { n: "扶墙拉上臂前侧", en: "wall biceps stretch", r: "30 秒/侧", feel: "上臂前侧和肩前被拉长", warn: "肩前刺痛就退一点", cues: ["手掌贴墙在身后,与肩同高,拇指朝下", "身体慢慢向另一侧转"], pose: ["S", [100, 74, 0, 0, 0, -90, -90, { frame: 1 }], [104, 74, 8, 0, 0, -95, -95, { frame: 1 }]] },
+  neck: { n: "收下巴 + 侧拉脖子", en: "chin tuck and neck stretch", r: "内收 5 秒 × 5;侧拉 20 秒/侧", feel: "颈后拉长,颈侧被拉开", warn: "轻,颈椎不做大幅度", cues: ["下巴水平后收 5 秒 × 5", "头向一侧倒,同侧手轻压,对侧肩下沉"], pose: ["S", [100, 74, 0, 0, 0, 0, 0, { head: 38 }], [100, 74, 0, 0, 0, 0, 0, { head: -6 }]] },
+  fig4: { n: "仰躺盘腿拉屁股", en: "supine figure four stretch", r: "30 秒/侧", feel: "臀部外侧深处", warn: "腰贴地,不要憋气", cues: ["仰卧,一脚踝搭在另一膝上", "双手抱住下面那条腿的膝后,往胸口拉", "呼气,让臀部松开"], pose: ["S", [100, 116, -90, 180, 90, 150, 100, { bench: -90, leg2: [150, 60] }], [100, 116, -90, 190, 100, 150, 105, { bench: -90, leg2: [140, 60] }]] },
+  ham: { n: "站着拉大腿后侧", en: "standing hamstring stretch", r: "30 秒/侧", feel: "大腿后侧被拉长,不是膝后", warn: "背保持平,屈髋不弯腰", cues: ["一脚跟点地在前,腿伸直,脚尖勾起", "臀往后推,背平着往前倾", "手扶在前腿上"], pose: ["S", [100, 74, 10, 0, 0, 0, 0, { leg2: [30, 30] }], [92, 78, 50, 0, 0, 30, 60, { leg2: [30, 30] }]] },
+  calf: { n: "扶墙拉小腿", en: "wall calf stretch", r: "30 秒/侧", feel: "后腿小腿肚被拉长", warn: "后脚跟不离地,脚尖朝前", cues: ["双手扶墙,一腿在后伸直", "前腿弯,身体往前压", "后脚跟踩实"], pose: ["S", [100, 76, 20, 25, 25, 90, 90, { frame: 1, leg2: [-20, -20] }], [104, 76, 25, 30, 30, 92, 92, { frame: 1, leg2: [-22, -22] }]] },
+  rectus: { n: "半跪压大腿前侧", en: "couch stretch rectus femoris", r: "30 秒/侧", feel: "大腿前侧中段到膝上被拉长,不是膝盖疼", warn: "腰一塌就等于没拉到,先臀夹紧骨盆后倾再前移;膝盖前侧疼就把后脚放低或垫毛巾", cues: ["半跪,后脚背搭在凳子或墙上", "后侧臀夹紧,骨盆往后卷,肋骨下压", "躯干直起来,不要靠塌腰去加大幅度", "股直肌跨髋跨膝,是半跪拉伸拉不到的那一块,骨盆前倾的人最缺这个"], pose: ["S", [104, 96, -4, 88, 4, 0, 0, { leg2: [-22, -165], box: [58, 96, 26, 36] }], [110, 96, -10, 84, 8, 0, 0, { leg2: [-28, -160], box: [58, 96, 26, 36] }]] },
   pullapart: { n: "弹力带拉开", en: "band pull apart", r: "15 次 × 2", feel: "肩胛中间(菱形肌、后束)收紧", warn: "手臂与肩平,不耸肩;不用大力带", cues: ["双手平举握带,与肩同宽", "手臂向两侧拉开到带子碰胸,肩胛收紧停 1 秒", "慢回"], pose: ["F", [90, 90, { band: 1 }], [88, 88, { band: 1, wide: 1 }]] },
   scaphang: { n: "悬垂沉肩胛", en: "scapular pull up", r: "8 次 × 2", feel: "腋下和肩胛下角往下沉,颈部拉长", warn: "肘不弯,只动肩胛;肩耸到耳朵就是错的", cues: ["双手抓杆悬垂,身体放松", "不弯肘,把肩胛往下往后沉,身体升起几厘米", "顶端停 2 秒,慢放回悬垂", "背日专用,教背阔先发力"], pose: ["S", [100, 82, 0, 0, 0, 180, 180, { bar: 1 }], [100, 76, 0, 0, 0, 180, 180, { bar: 1, head: -4 }]] },
   armpump: { n: "轻重量手臂预热", en: "light curl warm up", r: "空杆弯举 15 + 绳索下压 15", feel: "二头三头微微充血发热", warn: "重量是正式组的三分之一,不累", cues: ["EZ 空杆或最轻哑铃弯举 15 次", "绳索下压最轻 15 次", "肘关节和肌腱热起来再上正式重量"], pose: ["S", [100, 74, 0, 0, 0, 0, 0, { bar: 1 }], [100, 74, 0, 0, 0, 0, 150, { bar: 1 }]] },
@@ -492,15 +501,15 @@ const DEFAULT_PLAN = {
       { n: "胸部支撑划船", en: "chest supported row", feel: "肩胛骨中间(菱形肌、中斜方)和背阔", warn: "别用二头拉,想象手是钩子;头不抬,不甩", kind: "compound", type: "pin", s: 3, r: "10-12", rest: 90, start: 75, muscles: "中背、后束、二头", cues: ["胸贴靠垫,头不抬,视线向下", "先沉肩胛再拉,肘沿身体两侧向后", "顶峰停 1 秒,下放到肩胛完全打开", "不用腰,靠垫就是让你不用腰的"], pose: ["S", [96, 92, 55, 15, 0, 15, 15, { bench: 55, db: 1 }], [96, 92, 55, 15, 0, -60, -5, { bench: 55, db: 1 }]] },
       { n: "上斜哑铃弯举", en: "incline dumbbell curl", feel: "二头肌长头;手臂垂在身后时长头处于拉长位,那里最有感觉", warn: "肘不往前抬;下放要慢,这个位置最容易拉伤", kind: "iso", type: "db", s: 3, r: "10-12", rest: 90, start: 10.5, muscles: "二头长头", cues: ["凳背 45 度,手臂自然垂在身体后方", "肘固定不前移,只动前臂", "弯到顶挤 1 秒,下放 3 秒到完全伸直", "拉长位是二头长头的主项,不要减小幅度"], pose: ["S", [104, 96, -45, 90, 0, -8, -8, { bench: -45, db: 1 }], [104, 96, -45, 90, 0, -8, 160, { bench: -45, db: 1 }]] },
       { n: "绳索过顶臂屈伸", en: "overhead cable tricep extension", feel: "三头长头(上臂后侧靠腋下那段)", warn: "肘不外张;腰不过伸,肋骨下压", kind: "iso", type: "cable", s: 3, r: "12", rest: 90, start: 35, muscles: "三头长头", cues: ["背对低位滑轮,身体前倾 15 度,一脚在前", "肘指向前上方,固定不动", "从头后完全伸直到锁定,顶端停 1 秒", "手臂变粗主要靠三头长头,这个动作是主项"], pose: ["S", [96, 86, 15, 0, 0, 160, -40, { cable: [22, 132], leg2: [-15, 0] }], [96, 86, 15, 0, 0, 160, 172, { cable: [22, 132], leg2: [-15, 0] }]] },
-      { n: "面拉", en: "face pull", feel: "后束和肩胛中间,拉到位时肩后侧发紧", warn: "不是划船,拉向脸不是拉向胸;别用大重量", kind: "iso", type: "cable", s: 3, r: "15", rest: 60, start: 25, muscles: "后束、下斜方、外旋肌", cues: ["绳索在脸的高度,分开握", "拉向眼睛两侧,肘高于手,做到外旋", "肋骨下压,不后仰,骨盆中立", "轻重量高次数,做到 RPE 9"], pose: ["S", [96, 74, 0, 0, 0, 88, 88, { cable: [192, 36] }], [96, 74, 0, 0, 0, -75, 100, { cable: [192, 36] }]] } ,
+      { n: "绳索拉向脸", en: "face pull", feel: "后束和肩胛中间,拉到位时肩后侧发紧", warn: "不是划船,拉向脸不是拉向胸;别用大重量", kind: "iso", type: "cable", s: 3, r: "15", rest: 60, start: 25, muscles: "后束、下斜方、外旋肌", cues: ["绳索在脸的高度,分开握", "拉向眼睛两侧,肘高于手,做到外旋", "肋骨下压,不后仰,骨盆中立", "轻重量高次数,做到 RPE 9"], pose: ["S", [96, 74, 0, 0, 0, 88, 88, { cable: [192, 36] }], [96, 74, 0, 0, 0, -75, 100, { cable: [192, 36] }]] } ,
       { n: "训练后有氧 10-15 分", en: "zone 2 incline walk", kind: "cardio", type: "bw", s: 1, r: "10-15 分", rest: 0, cardio: true, muscles: "低强度,心率 120-140", cues: ["坡度走(坡 8-10,速 3.0)或单车,能说完整句子的强度", "不是冲刺,不做 HIIT;累了就走 10 分钟", "只在上肢日做,腿日不做"], feel: "微微出汗,呼吸略快", warn: "练完手臂再冲刺只会吃掉恢复;强度上去了就是错的" } ] },
     L: { name: "腿 · 臀", focus: "腿只维持,臀和大腿后侧为骨盆前倾练", ex: [
       { n: "45 度腿举", en: "45 degree leg press", feel: "股四头和臀,下放到底臀有拉伸感", warn: "臀部不能离座,离座腰椎受力;膝不内扣不锁死", kind: "compound", type: "plate", s: 3, r: "8-12", rest: 120, start: 175, muscles: "股四头、臀", cues: ["脚放板中偏上,与肩同宽;想多带内收肌就放到比肩宽一脚、脚尖略外", "下放到膝 90 度以下,臀不离座", "腰全程贴靠背,不塌不拱", "推起膝不锁死"], pose: ["S", [70, 100, -70, 165, 95, 40, 90, { seat: 1, plate: 1 }], [70, 100, -70, 135, 135, 40, 90, { seat: 1, plate: 1 }]] },
-      { n: "哑铃罗马尼亚硬拉", en: "dumbbell romanian deadlift", feel: "腘绳肌(大腿后侧)和臀,下放到底后侧绷紧", warn: "背一旦弯就停,这是拉伤腰的动作;膝只微屈", kind: "compound", type: "db", s: 3, r: "10-12", rest: 120, start: 40, muscles: "腘绳、臀、竖脊肌", cues: ["站直,肋骨下压,骨盆中立", "屈髋不屈膝,臀向后推,哑铃沿腿下滑", "背平,拉到小腿中段或腘绳拉紧即停", "臀夹紧站回来,顶端不后仰"], pose: ["S", [100, 74, 0, 0, 0, 0, 0, { db: 1 }], [92, 74, 72, 12, -8, 0, 0, { db: 1 }]] },
+      { n: "哑铃直腿硬拉", en: "dumbbell romanian deadlift", feel: "腘绳肌(大腿后侧)和臀,下放到底后侧绷紧", warn: "背一旦弯就停,这是拉伤腰的动作;膝只微屈", kind: "compound", type: "db", s: 3, r: "10-12", rest: 120, start: 40, muscles: "腘绳、臀、竖脊肌", cues: ["站直,肋骨下压,骨盆中立", "屈髋不屈膝,臀向后推,哑铃沿腿下滑", "背平,拉到小腿中段或腘绳拉紧即停", "臀夹紧站回来,顶端不后仰"], pose: ["S", [100, 74, 0, 0, 0, 0, 0, { db: 1 }], [92, 74, 72, 12, -8, 0, 0, { db: 1 }]] },
       { n: "臀推", en: "barbell hip thrust", feel: "臀大肌,顶点臀夹紧到最硬", warn: "顶点腰不过伸,肋骨扣住骨盆后倾;下巴收", kind: "compound", type: "plate", s: 3, r: "8-10", rest: 120, start: 135, muscles: "臀大肌", cues: ["上背靠凳边,脚踩实,顶端小腿垂直", "顶点:呼气、肋骨扣住、骨盆后倾、下巴微收", "用臀不用腰,腰不过伸", "顶峰停 1 秒"], pose: ["S", [92, 108, -40, 60, 0, -30, 60, { hipbench: 1, plate: 1 }], [96, 86, -82, 90, 0, -30, 60, { hipbench: 1, plate: 1 }]] },
       { n: "坐姿腿弯举", en: "seated leg curl", feel: "腘绳肌", warn: "屁股不抬,大腿垫压紧;不借力甩", kind: "iso", type: "pin", s: 3, r: "12", rest: 60, start: 65, muscles: "腘绳", cues: ["大腿垫压紧,不让屁股抬起", "拉到底停 1 秒,慢放 3 秒", "脚背勾起"], pose: ["S", [96, 84, -5, 90, 92, 10, 30, { seat: 1 }], [96, 84, -5, 90, 8, 10, 30, { seat: 1 }]] },
       { n: "站姿提踵", en: "standing calf raise", feel: "小腿", warn: "全幅度,底部停 1 秒;膝伸直不锁死", kind: "iso", type: "pin", s: 3, r: "12-15", rest: 60, start: 135, muscles: "小腿", cues: ["脚跟落到最低停 1 秒再起", "顶端停 1 秒,膝伸直不锁"], pose: ["S", [100, 76, 0, 0, 0, 0, 0, { step: 1 }], [100, 68, 0, 0, 0, 0, 0, { step: 1 }]] },
-      { n: "悬垂屈膝举腿", en: "hanging knee raise", feel: "下腹,骨盆卷起时腹部收紧", warn: "不晃,不借力;塌腰或髋前发紧就停,练的是骨盆卷起不是腿抬多高;做不出骨盆后倾就换负重死虫", kind: "iso", type: "bw", s: 3, r: "10-15", rest: 60, muscles: "下腹(腹直肌下部)、腹斜肌", cues: ["起始骨盆后倾,肋骨下压,不塌腰", "膝向胸拉,骨盆卷起,不是只抬腿", "下放慢,脚不晃,不借力", "这是抗伸展类核心,替代卷腹"], pose: ["S", [100, 78, 0, 0, 0, 180, 180, { bar: 1 }], [100, 78, -12, 95, 0, 180, 180, { bar: 1 }]] } ] },
+      { n: "吊着抬膝", en: "hanging knee raise", feel: "下腹,骨盆卷起时腹部收紧", warn: "不晃,不借力;塌腰或髋前发紧就停,练的是骨盆卷起不是腿抬多高;做不出骨盆后倾就换仰躺对角伸手伸腿", kind: "iso", type: "bw", s: 3, r: "10-15", rest: 60, muscles: "下腹(腹直肌下部)、腹斜肌", cues: ["起始骨盆后倾,肋骨下压,不塌腰", "膝向胸拉,骨盆卷起,不是只抬腿", "下放慢,脚不晃,不借力", "这是抗伸展类核心,替代卷腹"], pose: ["S", [100, 78, 0, 0, 0, 180, 180, { bar: 1 }], [100, 78, -12, 95, 0, 180, 180, { bar: 1 }]] } ] },
     U2: { name: "背 · 下胸", focus: "背先练,再肩,双杠练下胸和三头,最后手臂", ex: [
       { n: "高位下拉", en: "lat pulldown", feel: "背阔肌(腋下到腰的两侧),拉到位时腋下发紧", warn: "不后仰超过 15 度;不用二头拉;肩不上耸", kind: "compound", type: "pin", s: 4, r: "8-12", rest: 120, start: 80, muscles: "背阔肌、大圆肌", cues: ["先沉肩胛、下巴后收、胸口迎杆", "拉到锁骨下,肘向下向后", "顶峰停 1 秒,回放到完全伸展", "不后仰超过 15 度,不用腰"], pose: ["F", [150, 150, { topbar: 1, seat: 1 }], [35, 165, { topbar: 1, seat: 1 }]] },
       { n: "半跪姿单臂哑铃推", en: "half kneeling single arm dumbbell press", feel: "三角肌前中束,核心侧面抗侧倾", warn: "腰不过伸,肋骨下压;身体不往对侧倒", kind: "compound", type: "db", s: 3, r: "8-10", rest: 90, start: 20, muscles: "前束、侧束、核心", cues: ["后膝跪地,前脚踩实,骨盆中立,臀夹紧", "肋骨下压,不塌腰,不向侧面倒", "推到头顶,手臂垂直,肩胛向上旋转", "半跪姿是替代坐姿推举,为骨盆前倾选的"], pose: ["S", [98, 96, 0, 90, 0, 20, 170, { kneel: 1, db: 1 }], [98, 96, 0, 90, 0, 178, 178, { kneel: 1, db: 1 }]] },
@@ -515,8 +524,8 @@ const DEFAULT_PLAN = {
       { n: "机器侧平举(高次数)", en: "machine lateral raise drop set", feel: "肩膀外侧(三角肌中束)", warn: "靠肘顶,不靠手;不耸肩", kind: "iso", type: "pin", s: 4, r: "15-20", rest: 60, start: 25, muscles: "肩侧束", cues: ["肘顶住靶垫,靠肘发力不是靠手", "抬到与肩平,顶端停 1 秒", "慢放,不让重量落底", "最后一组做递减组:力竭后减 1-2 销再做到力竭"], pose: ["F", [12, 12, { pad: 1, seat: 1 }], [88, 88, { pad: 1, seat: 1 }]] },
       { n: "坐姿绳索划船", en: "seated cable row", feel: "中背和背阔,肩胛收紧", warn: "躯干前倒不超过 10 度;不用腰;肘贴身", kind: "compound", type: "cable", s: 3, r: "10-12", rest: 90, start: 60, muscles: "中背、后束、背阔", cues: ["坐直,膝微屈,躯干固定", "先沉肩胛再拉,肘贴身拉到腹部", "胸口向前顶,顶峰停 1 秒", "回放时肩胛前伸,躯干不前倒超过 10 度"], pose: ["S", [96, 86, 8, 80, 60, 90, 90, { cable: [194, 74], seat: 1 }], [96, 86, 0, 80, 60, -30, -20, { cable: [194, 74], seat: 1 }]] },
       { n: "平板哑铃卧推", en: "flat dumbbell press", feel: "胸中部", warn: "肩胛贴凳;哑铃落到胸两侧不落太深", kind: "compound", type: "db", s: 2, r: "10-12", rest: 120, start: 40, muscles: "胸、三头", cues: ["肩胛后收下沉贴凳,双脚踩实", "哑铃落到胸中部两侧,肘 45 度", "推起不锁死,不碰铃", "胸的量减脂期够了,不再加"], pose: ["S", [84, 96, -90, 80, 0, 100, 180, { bench: -90, db: 1 }], [84, 96, -90, 80, 0, 178, 178, { bench: -90, db: 1 }]] },
-      { n: "反向飞鸟(后束)", en: "rear delt fly", feel: "肩后侧(后束)", warn: "肩胛别主动夹,手臂打开就够;重量要轻", kind: "iso", type: "db", s: 3, r: "15", rest: 60, start: 10, muscles: "后束、菱形肌", cues: ["俯身 45 度或胸贴上斜凳,头不抬", "手臂向两侧打开到与肩平,肘微屈", "拇指朝上或中立(掌心相对),不要拇指朝下;肩胛不主动夹", "轻重量,顶端停 1 秒"], pose: ["F", [15, 15, { db: 1, bent: 1 }], [88, 88, { db: 1, bent: 1 }]] },
-      { n: "Pallof 推", en: "pallof press", feel: "腹斜肌,身体抗旋转时侧腹绷紧", warn: "身体一点不转;肋骨下压;呼气发力", kind: "iso", type: "cable", s: 3, r: "12/侧", rest: 60, start: 20, muscles: "腹斜肌、抗旋转", cues: ["缆绳来自身体侧面,胸口高度,分腿站", "肋骨下压,骨盆中立,臀夹紧", "手臂向前推直,身体一点不转,停 2 秒", "抗旋转核心,替代卷腹,腰不会变粗"], pose: ["S", [96, 74, 0, 0, 0, 35, 105, { cable: [188, 64], leg2: [-15, 0], side: 1 }], [96, 74, 0, 0, 0, 90, 90, { cable: [188, 64], leg2: [-15, 0], side: 1 }]] } ,
+      { n: "反向飞鸟 · 练肩后侧", en: "rear delt fly", feel: "肩后侧(后束)", warn: "肩胛别主动夹,手臂打开就够;重量要轻", kind: "iso", type: "db", s: 3, r: "15", rest: 60, start: 10, muscles: "后束、菱形肌", cues: ["俯身 45 度或胸贴上斜凳,头不抬", "手臂向两侧打开到与肩平,肘微屈", "拇指朝上或中立(掌心相对),不要拇指朝下;肩胛不主动夹", "轻重量,顶端停 1 秒"], pose: ["F", [15, 15, { db: 1, bent: 1 }], [88, 88, { db: 1, bent: 1 }]] },
+      { n: "抗扭转平推", en: "pallof press", feel: "腹斜肌,身体抗旋转时侧腹绷紧", warn: "身体一点不转;肋骨下压;呼气发力", kind: "iso", type: "cable", s: 3, r: "12/侧", rest: 60, start: 20, muscles: "腹斜肌、抗旋转", cues: ["缆绳来自身体侧面,胸口高度,分腿站", "肋骨下压,骨盆中立,臀夹紧", "手臂向前推直,身体一点不转,停 2 秒", "抗旋转核心,替代卷腹,腰不会变粗"], pose: ["S", [96, 74, 0, 0, 0, 35, 105, { cable: [188, 64], leg2: [-15, 0], side: 1 }], [96, 74, 0, 0, 0, 90, 90, { cable: [188, 64], leg2: [-15, 0], side: 1 }]] } ,
       { n: "训练后有氧 10-15 分", en: "zone 2 incline walk", kind: "cardio", type: "bw", s: 1, r: "10-15 分", rest: 0, cardio: true, muscles: "低强度,心率 120-140", cues: ["坡度走(坡 8-10,速 3.0)或单车,能说完整句子的强度", "不是冲刺,不做 HIIT;累了就走 10 分钟", "只在上肢日做,腿日不做"], feel: "微微出汗,呼吸略快", warn: "练完手臂再冲刺只会吃掉恢复;强度上去了就是错的" } ] },
     cardio: { name: "有氧日 · 低强度 30-40 分", focus: "心率 130-145,能说话的强度。想加强度:一周最多 1 次单车间歇,放在这一天", ex: [
       { n: "游泳(自由泳 2/3 + 仰泳 1/3)", en: "freestyle swimming technique", kind: "cardio", type: "bw", s: 1, r: "30-40 分", rest: 0, cardio: true, muscles: "全身", cues: ["自由泳每 3 划双侧换气,头随体转不抬头", "仰泳占三分之一,对抗圆肩和前伸头", "不用打腿板趴着抬头,那是颈椎最差的姿势", "蛙泳少练"] },
@@ -775,11 +784,18 @@ function renderStats() {
   const nextDeload = (PLAN.deloadWeeks || []).find(k => k >= w); const daysToDeload = nextDeload ? Math.max(0, dayDiff(todayStr(), addDays(PLAN.startDate, (nextDeload - 1) * 7))) : null;
   const doneThisWeek = S.workouts.filter(x => x.week === w && PLAN.order.includes(x.day)).length;
   const nut = nutritionFor(w);
+  const b0 = (PLAN.baseline || {}).weightLb, tg = (PLAN.targets || {}).weightLb;
+  const a7 = avgAt(weightSeries(), todayStr());
+  const nowLb = a7 != null ? toLb(a7) : null;
+  const cutting = b0 != null && tg != null ? tg <= b0 : true;
+  const cutLabel = cutting ? "已减" : "已增";
+  const moved = (nowLb != null && b0 != null) ? toKg(cutting ? (b0 - nowLb) : (nowLb - b0)) : null;
+  const toGo = (nowLb != null && tg != null) ? Math.abs(toKg(nowLb) - toKg(tg)) : null;
   el("stats").innerHTML = `
     <div><div class="k">今天</div><div class="v">${todayKey && todayKey !== "rest" ? DAY_LBL[todayKey] : "休息"}</div></div>
-    <div><div class="k">第几周</div><div class="v">${Math.max(0, w)}<small>/24</small></div></div>
-    <div><div class="k">本周力量</div><div class="v">${doneThisWeek}<small>/4</small></div></div>
-    <div><div class="k">${(PLAN.deloadWeeks || []).includes(w) ? "本周" : "距轻量周"}</div><div class="v">${(PLAN.deloadWeeks || []).includes(w) ? "轻量" : daysToDeload != null ? daysToDeload + "<small> 天</small>" : "--"}</div></div>`;
+    <div><div class="k">${cutLabel}</div><div class="v">${moved != null ? (moved > 0 ? moved.toFixed(1) : "0.0") + "<small> kg</small>" : "--"}</div></div>
+    <div><div class="k">本周训练</div><div class="v">${doneThisWeek}<small>/${Math.max(1, (PLAN.order || []).length)}</small></div></div>
+    <div><div class="k">离目标</div><div class="v">${toGo != null ? toGo.toFixed(1) + "<small> kg</small>" : Math.max(0, w) + "<small>/24 周</small>"}</div></div>`;
   let pills = ""; if (w < 1) pills += `${PLAN.startDate.slice(5).replace("-", "/")} 开始 · `; if ((PLAN.deloadWeeks || []).includes(w)) pills += `轻量周:组数减半,重量不变 · `; if ((PLAN.dietBreakWeeks || []).includes(w)) pills += `恢复周:吃 ${nut.kcal} · `;
   const b = blockFor(Math.max(1, w)); if (w === b.from && b.n > 1) pills += `换阶段第一周,本周不自动加重 · `;
   el("stats").insertAdjacentHTML("afterend", "");
@@ -849,13 +865,14 @@ function renderWorkout() {
   const card = el("workoutCard"); card.innerHTML = h;
   card.querySelectorAll("[data-warm]").forEach(li => li.addEventListener("click", ev => { if (ev.target.closest("[data-open]")) return; const i = +li.dataset.warm; const k = w.warm.indexOf(i); k >= 0 ? w.warm.splice(k, 1) : w.warm.push(i); li.classList.toggle("on", k < 0); li.closest("details").querySelector("summary .faint").textContent = `${w.warm.length}/${wuList.length}`; }));
   card.querySelectorAll("[data-str]").forEach(li => li.addEventListener("click", ev => { if (ev.target.closest("[data-open]")) return; const i = +li.dataset.str; const k = w.str.indexOf(i); k >= 0 ? w.str.splice(k, 1) : w.str.push(i); li.classList.toggle("on", k < 0); li.closest("details").querySelector("summary .faint").textContent = `${w.str.length}/${stList.length}`; }));
-  card.querySelectorAll("input[data-f]").forEach(inp => inp.addEventListener("input", () => { w.exercises[inp.dataset.i].sets[inp.dataset.j][inp.dataset.f] = inp.value; }));
+  card.querySelectorAll("input[data-f]").forEach(inp => inp.addEventListener("input", () => { w.exercises[inp.dataset.i].sets[inp.dataset.j][inp.dataset.f] = inp.value; scheduleSave(); }));
   card.querySelectorAll("[data-open]").forEach(t => t.addEventListener("click", ev => { ev.preventDefault(); ev.stopPropagation(); showExercise(t.dataset.open); }));
-  card.querySelectorAll("[data-rir]").forEach(b => b.addEventListener("click", () => { const ex = w.exercises[b.dataset.i]; ex.rir = +b.dataset.rir; card.querySelectorAll(`[data-rir][data-i="${b.dataset.i}"]`).forEach(x => x.classList.toggle("on", +x.dataset.rir === ex.rir)); el("rir-" + b.dataset.i).classList.remove("miss"); }));
+  card.querySelectorAll("[data-rir]").forEach(b => b.addEventListener("click", () => { const ex = w.exercises[b.dataset.i]; ex.rir = +b.dataset.rir; card.querySelectorAll(`[data-rir][data-i="${b.dataset.i}"]`).forEach(x => x.classList.toggle("on", +x.dataset.rir === ex.rir)); el("rir-" + b.dataset.i).classList.remove("miss"); scheduleSave(); }));
   card.querySelectorAll(".done").forEach(b => b.addEventListener("click", () => {
     const ex = w.exercises[b.dataset.i]; const s = ex.sets[b.dataset.j]; s.done = !s.done; b.classList.toggle("on", s.done);
     if (s.done && (s.r === "" || s.r == null) && !ex.cardio) { const t = topReps(ex); if (t) { s.r = String(t); const ri = card.querySelector(`input[data-i="${b.dataset.i}"][data-j="${b.dataset.j}"][data-f="r"]`); if (ri) ri.value = s.r; } }
     syncExSummary(card, b.dataset.i, ex);
+    scheduleSave();
     if (s.done && ex.rest && !ex.cardio) startTimer(ex.rest);
     const nx = ex.sets[+b.dataset.j + 1];
     if (s.done && nx && (nx.w === "" || nx.w === null) && s.w !== "") { nx.w = s.w; const ni = card.querySelector(`input[data-i="${b.dataset.i}"][data-j="${+b.dataset.j + 1}"][data-f="w"]`); if (ni) ni.value = s.w; }
@@ -867,10 +884,10 @@ function renderWorkout() {
       const db = card.querySelector(`.done[data-i="${i}"][data-j="${j}"]`); if (db) db.classList.add("on");
       const ri = card.querySelector(`input[data-i="${i}"][data-j="${j}"][data-f="r"]`); if (ri) ri.value = s.r;
     });
-    syncExSummary(card, i, ex);
+    syncExSummary(card, i, ex); scheduleSave();
     const rr = el("rir-" + i); if (rr) rr.scrollIntoView({ block: "center", behavior: "smooth" });
   }));
-  el("wNotes").addEventListener("input", e => w.notes = e.target.value);
+  el("wNotes").addEventListener("input", e => { w.notes = e.target.value; scheduleSave(); });
   tickDur();
 }
 function tickDur() { const d = el("wDur"); if (!d || !S.workout) return; const m = Math.floor((Date.now() - S.workout.startedAt) / 60000); d.textContent = m ? m + " 分钟" : ""; }
@@ -911,25 +928,52 @@ async function applyProgression(saved) {
   }
   return rows;
 }
-el("saveWorkout").addEventListener("click", async () => {
-  const w = S.workout; if (!w) return;
-  const missing = w.exercises.filter(ex => !ex.cardio && ex.rir == null && ex.sets.some(s => s.r !== "" && s.r !== null));
-  missing.forEach(ex => { const i = w.exercises.indexOf(ex); const r = el("rir-" + i); if (r) r.classList.add("miss"); });
+function workoutDoc(w) {
   const exercises = w.exercises.map(ex => ({ n: ex.n, kind: ex.kind, type: ex.type, rep: ex.rep, target: ex.target, rir: ex.rir, sets: ex.sets.filter(s => s.r !== "" && s.r !== null).map(s => ({ w: num(s.w) ?? "", r: num(s.r) ?? "", done: !!s.done })) })).filter(ex => ex.sets.length);
-  if (!exercises.length) { toast("还没填任何一组的次数"); return; }
-  const btn = el("saveWorkout"); btn.disabled = true;
-  const doc = { date: w.date, day: w.day, dayName: w.dayName, week: w.week, exercises, notes: w.notes || "", durationMin: Math.round((Date.now() - w.startedAt) / 60000), bodyWeight: bodyWeightLb(), createdAt: Date.now() };
-  const ok = await safe(() => dbSet("workouts", w.id, doc), "保存失败,稍后再试");
-  if (ok === FAIL) { btn.disabled = false; return; }
-  S.workouts.unshift({ id: w.id, ...doc });
+  return { date: w.date, day: w.day, dayName: w.dayName, week: w.week, exercises, notes: w.notes || "", durationMin: Math.round((Date.now() - w.startedAt) / 60000), bodyWeight: bodyWeightLb(), createdAt: Date.now() };
+}
+function doneRatio(w) {
+  let all = 0, done = 0;
+  for (const ex of w.exercises) { if (ex.cardio) continue; for (const s of ex.sets) { all++; if (s.done) done++; } }
+  return all ? done / all : 0;
+}
+function rirReady(w) {
+  return w.exercises.every(ex => ex.cardio || ex.rir != null || !ex.sets.some(s => s.r !== "" && s.r !== null));
+}
+let saveT = null;
+function scheduleSave() {
+  const st = el("wSaveState"); if (st) st.textContent = "记着呢…";
+  clearTimeout(saveT); saveT = setTimeout(saveDraft, 1500);
+}
+async function saveDraft() {
+  const w = S.workout; if (!w) return;
+  const doc = workoutDoc(w); if (!doc.exercises.length) { const st = el("wSaveState"); if (st) st.textContent = "打勾就会自动存,不用管"; return; }
+  doc.finalized = false; doc.ratio = doneRatio(w);
+  const ok = await safe(() => dbSet("workouts", w.id, doc), null);
+  const st = el("wSaveState");
+  if (st) st.textContent = ok === FAIL ? "存不上,检查一下网络" : `已存 · ${Math.round(doc.ratio * 100)}% 完成${doc.ratio >= 0.8 && !rirReady(w) ? " · 还差「还能再做几次」" : ""}`;
+  if (doc.ratio >= 0.8 && rirReady(w) && !w.finalized) finalizeWorkout(w, doc);
+}
+async function finalizeWorkout(w, doc) {
+  if (w.finalized) return; w.finalized = true;
+  doc.finalized = true;
+  await safe(() => dbSet("workouts", w.id, doc), null);
   const rows = await applyProgression(doc);
-  btn.disabled = false;
   await loadWorkouts();
-  S.day = nextDayKey(); S.workout = buildWorkout(S.day); renderStats(); renderDayChips(); renderWorkout();
-  const nd = PLAN.days[S.day];
-  openSheet(`<div class="row between"><h3 style="font-size:18px">本次结算 · ${esc(w.dayName)}</h3><button class="icon" id="sheetClose">×</button></div><div class="faint" style="margin-bottom:6px">${exercises.reduce((a, e) => a + e.sets.length, 0)} 组 · ${doc.durationMin} 分钟</div>${rows.map(r => `<div class="settle"><div class="ic ${r.cls}">${r.ic}</div><div style="flex:1"><div style="font-weight:600">${esc(r.n)} <span class="num" style="color:var(--ink2)">→ ${r.w} lb</span></div><div class="mini">${esc(r.why)}</div></div></div>`).join("")}<div class="banner" style="margin-top:12px">下一次:${esc(nd.name)}</div>`);
-  el("sheetClose").addEventListener("click", closeSheet);
-});
+  const st = el("wSaveState"); if (st) st.textContent = "这次练完了 ✓ 下次的重量已经算好";
+  toast("这次训练记下了" + (rows && rows.length ? " · 有动作加重了" : ""));
+  renderStats();
+}
+async function finalizeStale() {
+  const t = todayStr();
+  for (const x of (S.workouts || [])) {
+    if (x.finalized || x.date >= t) continue;
+    if ((x.ratio || 0) < 0.5) continue;
+    await safe(() => dbSet("workouts", x.id, Object.assign({}, x, { finalized: true, id: undefined })), null);
+    await applyProgression(x);
+  }
+}
+
 async function loadWorkouts() {
   const list = await safe(() => dbList("workouts", { field: "date", dir: "desc", limit: 80 }), "读取训练记录失败"); if (list === FAIL) return;
   S.workouts = (list || []).sort((a, b) => b.date.localeCompare(a.date) || (b.createdAt || 0) - (a.createdAt || 0));
@@ -1431,9 +1475,81 @@ async function askCoach() {
     st.textContent = { not_granted: "你没允许这个页面调用 Claude", rate_limited: "问得太频繁,等一下再问", cancelled: "取消了", empty: "教练没答上来,再试一次" }[e && e.code] || "出错了,再试一次";
   } finally { btn.disabled = false; }
 }
+function drawProjection() {
+  const P = PLAN, B = P.baseline || {}, T = P.targets || {};
+  const TW = 24, nowW = Math.max(0, Math.min(TW, weekNo()));
+  const s0 = B.weightLb != null ? toKg(B.weightLb) : null, g0 = T.weightLb != null ? toKg(T.weightLb) : null;
+  const ws = weightSeries();
+
+  // ---------- 体重 ----------
+  const W = 340, H = 150, pl = 32, pr = 10, pt = 12, pb = 20;
+  const X = k => pl + (Math.max(0, Math.min(TW, k)) / TW) * (W - pl - pr);
+  if (s0 != null && g0 != null) {
+    const act = ws.map(p => ({ k: weekNo(p.date), v: avgAt(ws, p.date) })).filter(p => p.v != null && p.k >= 0);
+    const all = [s0, g0].concat(act.map(p => p.v));
+    let lo = Math.min(...all) - 1.5, hi = Math.max(...all) + 1.5;
+    const Y = v => pt + (hi - v) / (hi - lo) * (H - pt - pb);
+    let g = "";
+    for (let k = 0; k <= TW; k += 6) g += `<line x1="${X(k)}" x2="${X(k)}" y1="${pt}" y2="${H - pb}" stroke="var(--hair)"/><text x="${X(k)}" y="${H - 6}" text-anchor="middle">${k}周</text>`;
+    g += `<text x="${pl - 4}" y="${Y(s0) + 4}" text-anchor="end">${s0.toFixed(0)}</text><text x="${pl - 4}" y="${Y(g0) + 4}" text-anchor="end">${g0.toFixed(0)}</text>`;
+    g += `<line x1="${X(0)}" y1="${Y(s0)}" x2="${X(TW)}" y2="${Y(g0)}" stroke="var(--ink3)" stroke-dasharray="4 3" stroke-width="1.5"/>`;
+    g += `<text x="${X(TW)}" y="${Y(g0) - 6}" text-anchor="end" font-weight="700" fill="var(--ink2)">计划</text>`;
+    if (act.length > 1) g += `<polyline fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linejoin="round" points="${act.map(p => `${X(p.k)},${Y(p.v)}`).join(" ")}"/>`;
+    const last = act[act.length - 1];
+    let txt = "还没有足够的体重记录,先连着称几天";
+    if (last) {
+      g += `<circle cx="${X(last.k)}" cy="${Y(last.v)}" r="4" fill="var(--accent)"/>`;
+      const a0 = avgAt(ws, todayStr()), a14 = avgAt(ws, addDays(todayStr(), -14));
+      const rate = (a0 != null && a14 != null) ? (a0 - a14) / 2 : null;
+      const dir = g0 <= s0 ? -1 : 1;
+      if (rate != null && rate * dir > 0.02) {
+        const weeksLeft = (g0 - last.v) / rate;
+        const endW = last.k + weeksLeft;
+        g += `<line x1="${X(last.k)}" y1="${Y(last.v)}" x2="${X(endW)}" y2="${Y(g0)}" stroke="var(--accent)" stroke-width="2" stroke-dasharray="3 3" opacity=".65"/>`;
+        if (endW <= TW) g += `<circle cx="${X(endW)}" cy="${Y(g0)}" r="4" fill="none" stroke="var(--accent)" stroke-width="2"/>`;
+        const eta = addDays(todayStr(), Math.round((weeksLeft) * 7));
+        const diff = dayDiff(T.goalDate || addDays(P.startDate, TW * 7), eta);
+        txt = `按现在的速度,${eta.slice(5).replace("-", "/")} 到 ${g0.toFixed(1)} kg` + (diff === 0 ? ",正好卡在计划上" : diff < 0 ? `,比计划早 ${-diff} 天` : `,比计划晚 ${diff} 天`);
+      } else if (rate != null && rate * dir < -0.02) {
+        txt = `现在 ${last.v.toFixed(1)} kg。近两周每周${dir < 0 ? "涨" : "掉"}了 ${Math.abs(rate).toFixed(2)} kg —— 方向反了,照这样到不了目标。先看饮食记录是不是漏了`;
+      } else if (rate != null) {
+        txt = `现在 ${last.v.toFixed(1)} kg,离目标还有 ${Math.abs(last.v - g0).toFixed(1)} kg。近两周基本没动,可以再等一周看看`;
+      } else {
+        txt = `现在 ${last.v.toFixed(1)} kg,离目标还有 ${Math.abs(last.v - g0).toFixed(1)} kg。速度算不出来(近两周要各有 4 次称重)`;
+      }
+    }
+    el("projW").innerHTML = g; el("projWTxt").textContent = txt;
+  } else { el("projW").innerHTML = ""; el("projWTxt").textContent = "计划里没写基线或目标体重"; }
+
+  // ---------- 力量 ----------
+  const starts = {};
+  for (const k of (P.order || [])) for (const e of ((P.days[k] || {}).ex || [])) if (e.kind !== "cardio" && e.start != null && e.start > 0) starts[e.n] = e.start;
+  const H2 = 120, pb2 = 20;
+  const GOAL = 1.20;
+  const Y2 = v => pt + (GOAL + 0.06 - v) / (GOAL + 0.06 - 0.94) * (H2 - pt - pb2);
+  let g2 = "";
+  for (let k = 0; k <= TW; k += 6) g2 += `<line x1="${X(k)}" x2="${X(k)}" y1="${pt}" y2="${H2 - pb2}" stroke="var(--hair)"/><text x="${X(k)}" y="${H2 - 6}" text-anchor="middle">${k}周</text>`;
+  [1.0, 1.1, 1.2].forEach(v => g2 += `<text x="${pl - 4}" y="${Y2(v) + 4}" text-anchor="end">+${Math.round((v - 1) * 100)}%</text>`);
+  g2 += `<line x1="${X(0)}" y1="${Y2(1)}" x2="${X(TW)}" y2="${Y2(GOAL)}" stroke="var(--ink3)" stroke-dasharray="4 3" stroke-width="1.5"/><text x="${X(TW)}" y="${Y2(GOAL) - 6}" text-anchor="end" font-weight="700" fill="var(--ink2)">计划 +20%</text>`;
+  const seen = {}, pts = [];
+  for (const wkt of [...(S.workouts || [])].sort((a, b) => a.date.localeCompare(b.date))) {
+    for (const ex of (wkt.exercises || [])) { const b0 = starts[ex.n]; if (!b0) continue; const mx = Math.max(0, ...(ex.sets || []).map(x => +x.w || 0)); if (mx > 0) seen[ex.n] = mx / b0; }
+    const vs = Object.values(seen); if (vs.length) pts.push({ k: Math.max(0, weekNo(wkt.date)), v: vs.reduce((a, b) => a + b, 0) / vs.length });
+  }
+  let t2 = "练几次之后这里会长出你自己的线。计划是 24 周把平均重量抬 20%";
+  if (pts.length) {
+    if (pts.length > 1) g2 += `<polyline fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linejoin="round" points="${pts.map(p => `${X(p.k)},${Y2(Math.max(0.94, Math.min(GOAL + 0.06, p.v)))}`).join(" ")}"/>`;
+    const lp = pts[pts.length - 1];
+    g2 += `<circle cx="${X(lp.k)}" cy="${Y2(Math.max(0.94, Math.min(GOAL + 0.06, lp.v)))}" r="4" fill="var(--accent)"/>`;
+    const pct = Math.round((lp.v - 1) * 100);
+    t2 = `现在平均 ${pct >= 0 ? "+" : ""}${pct}%,计划到第 24 周 +20%。` + (pct >= 20 ? "已经超了,这一项可以提前收工" : `还差 ${20 - pct} 个点`);
+  }
+  el("projS").innerHTML = g2; el("projSTxt").textContent = t2;
+  el("projNote").textContent = `第 ${Math.max(0, weekNo())} 周 / 24`;
+}
 function renderPlan() {
   const P = PLAN; const w = weekNo();
-  renderCal(); drawTimeline(); drawNutri();
+  renderCal(); drawTimeline(); drawNutri(); drawProjection();
   renderCoach();
   const wu = P.warmup || {}, st = P.stretch || {}; const mobLine = m => `<div class="plan-ex" data-open="${esc(m.n)}"><div class="thumb">${illus(m, true)}</div><span>${esc(m.n)}<div class="mini">${esc(m.r || "")}</div></span></div>`;
   el("planWarm").innerHTML = `<div class="mini">${esc(wu.common || "")}</div>` + ["U1", "U2", "U3", "L"].filter(k => wu[k]).map(k => `<div class="lbl2">${DAY_LBL[k]}日热身</div>${wu[k].map(mobLine).join("")}`).join("") + `<div class="mini" style="margin-top:6px">${esc(wu.ramp || "")}</div><div class="lbl2">上肢日拉伸</div>${(st.upper || []).map(mobLine).join("")}<div class="lbl2">下肢日拉伸</div>${(st.lower || []).map(mobLine).join("")}`;
@@ -1457,5 +1573,5 @@ async function boot() {
   await loadBody(); await loadWorkouts();
   S.day = nextDayKey(); S.workout = buildWorkout(S.day); renderStats(); renderDayChips(); renderWorkout();
 }
-boot();
+boot().then(() => { try { finalizeStale(); } catch (e) { console.error(e); } });
 </script>
