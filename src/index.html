@@ -1247,49 +1247,79 @@ function drawNutri() {
   PLAN.nutrition.forEach(n => { const x = px + (n.from - 1) * cw, x2 = px + Math.min(n.to, 24) * cw; s += `<text x="${(x + x2) / 2}" y="${Y(n.kcal) - 4}" text-anchor="middle" font-size="11" font-weight="700" fill="var(--ink)">${n.kcal} · 蛋白 ${n.protein}</text>`; });
   el("nutriChart").innerHTML = s;
 }
+const COACH_SYS = `你是这个人的力量与体成分教练,长期跟他。规则:
+用中文,口语,直接给判断和动作,不要罗列免责声明,不要每次重复自我介绍。
+有数字就用他的数字。数据不够就说缺什么。每次回答不超过 200 字。
+涉及疼痛、受伤、疾病、用药、怀孕:先让他去看医生,再给保守建议。
+每次提问前面会附上他的最新数据,以最新那份为准 —— 前面对话里的旧数字已经过期。`;
+
+function coachCtx() {
+  const w = weekNo(), T = nutritionFor(w), P = PLAN;
+  const ws = weightSeries().slice(-14).map(x => `${x.date.slice(5)} ${x.kg.toFixed(1)}`).join(" / ");
+  const recent = (S.workouts || []).slice(0, 5).map(x => `${x.date.slice(5)} ${x.dayName}`).join(" / ");
+  const sc = (S.body || []).filter(b => b.bf != null).slice(-1)[0];
+  return `【今天】${todayStr()} · 第 ${w} 周 / 共 24 周
+【计划】${P.block || ""} 目标:${P.goal || ""}
+基线 ${P.baseline ? `${P.baseline.weightLb} lb / 体脂 ${P.baseline.bfPct}% / 腰 ${P.baseline.waistCm} cm` : "无"};目标 ${P.targets.weightLb} lb / 体脂 ${P.targets.bfPct}% / 腰 ${P.targets.waistCm} cm,${P.targets.goalDate}
+本周热量 ${T.kcal} kcal / 蛋白 ${T.protein} g
+【近 14 天体重 kg】${ws || "还没记"}
+【最近一次体成分】${sc ? `${sc.date} 体脂 ${sc.bf}%${sc.lbm != null ? " / 瘦体重 " + sc.lbm + " lb" : ""}` : "还没测"}
+【最近训练】${recent || "还没练"}
+【加重规则】${(P.rules || []).slice(0, 4).join(" ")}`;
+}
+
+async function loadCoach() {
+  if (S.coachLoaded) return;
+  const rows = await safe(() => dbList("coach", { field: "createdAt", dir: "desc", limit: 40 }), null);
+  S.coach = (rows === FAIL || !rows) ? [] : rows.slice().sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+  S.coachLoaded = true;
+}
+
 async function renderCoach() {
   const box = el("planDays");
   if (!sample) { box.innerHTML = `<div class="card"><h3>问教练</h3><div class="faint" style="margin-top:6px">这个页面没拿到 Claude 的调用权限,教练对话用不了。每天练什么在上面日历里点日期看。</div></div>`; return; }
+  await loadCoach();
   const log = S.coach || [];
   box.innerHTML = `<div class="card">
-    <h3>问教练</h3>
-    <div class="faint" style="margin:4px 0 10px">它知道你的计划、最近的体重和训练。比如:这周该不该加重量 / 腰围两周没动怎么办 / 明天出差怎么吃 / 肩膀有点疼还能练吗</div>
-    <div id="coachLog">${log.map(c => `<div style="margin-bottom:12px"><div class="feel" style="margin-bottom:6px">${esc(c.q)}</div><div class="note">${esc(c.a)}</div></div>`).join("")}</div>
-    <textarea id="coachQ" rows="2" placeholder="想问什么?"></textarea>
+    <div class="row between"><h3>问教练</h3>${log.length ? `<button class="btn ghost sm" id="coachClear">清空对话</button>` : ""}</div>
+    <div class="faint" style="margin:4px 0 10px">它记得你们之前聊过什么,也知道你的计划和最新数据。比如:这周该不该加重量 / 腰围两周没动怎么办 / 明天出差怎么吃 / 肩膀有点疼还能练吗</div>
+    <div id="coachLog">${log.map(c => `<div style="margin-bottom:14px"><div class="feel" style="margin-bottom:6px">${esc(c.q)}</div><div class="note">${esc(c.a)}</div><div class="mini" style="margin-top:4px">${esc((c.date || "").slice(5))}</div></div>`).join("")}</div>
+    <textarea id="coachQ" rows="2" placeholder="${log.length ? "接着问…" : "想问什么?"}"></textarea>
     <div class="status" id="coachStatus" style="margin-top:6px"></div>
     <button class="btn primary block" id="coachSend" style="margin-top:8px">问教练</button>
   </div>`;
   el("coachSend").addEventListener("click", askCoach);
+  el("coachQ").addEventListener("keydown", e => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) askCoach(); });
+  const cc = el("coachClear");
+  if (cc) cc.addEventListener("click", async () => {
+    for (const c of S.coach) { if (c.id) await safe(() => dbDel("coach", c.id), null); }
+    S.coach = []; toast("对话已清空"); renderCoach();
+  });
+  el("coachLog").scrollTop = el("coachLog").scrollHeight;
 }
+
 async function askCoach() {
   const q = el("coachQ").value.trim(); if (!q) { toast("先写点什么"); return; }
   const btn = el("coachSend"), st = el("coachStatus"); btn.disabled = true; st.className = "status"; st.textContent = "教练在想…";
-  const w = weekNo(), T = nutritionFor(w), P = PLAN;
-  const ws = weightSeries().slice(-14).map(x => `${x.date.slice(5)} ${x.kg.toFixed(1)}`).join(" / ");
-  const recent = (S.workouts || []).slice(0, 5).map(x => `${x.date.slice(5)} ${x.dayName}`).join(" / ");
-  const ctx = `【计划】${P.block || ""} 第 ${w} 周 / 共 24 周。目标:${P.goal || ""}
-基线 ${P.baseline ? `${P.baseline.weightLb} lb / 体脂 ${P.baseline.bfPct}% / 腰 ${P.baseline.waistCm} cm` : "无"};目标 ${P.targets.weightLb} lb / 体脂 ${P.targets.bfPct}% / 腰 ${P.targets.waistCm} cm,${P.targets.goalDate}
-本周热量 ${T.kcal} kcal / 蛋白 ${T.protein} g
-【近 14 天体重 kg】${ws || "还没记"}
-【最近训练】${recent || "还没练"}
-【加重规则】${(P.rules || []).slice(0, 4).join(" ")}`;
+  // 多轮:第一轮立身份,中间是历史问答,最后一轮带最新数据 + 本次问题
+  const turns = [{ role: "user", content: COACH_SYS }, { role: "assistant", content: "明白。每次你把最新数据发我,我按最新的答。" }];
+  for (const c of (S.coach || []).slice(-8)) { turns.push({ role: "user", content: c.q }); turns.push({ role: "assistant", content: c.a }); }
+  turns.push({ role: "user", content: `${coachCtx()}\n\n【他问】${q}` });
+  const baseLog = el("coachLog").innerHTML;
   try {
-    let acc = ""; const baseLog = el("coachLog").innerHTML;
-    const r = await sample(`你是这个人的力量与体成分教练。下面是他的计划和最近数据,然后是他的问题。
-
-${ctx}
-
-【他问】${q}
-
-要求:用中文,口语,直接给判断和动作,不要罗列免责声明。有数字就用他的数字。他问的事情如果数据不够就说缺什么。不要超过 200 字。涉及疼痛、受伤、疾病、用药,先让他去看医生,再给保守建议。`,
-      { modelTier: "default", onText: ({ text }) => { acc = text; st.textContent = ""; const L = el("coachLog"); L.innerHTML = baseLog; L.insertAdjacentHTML("beforeend", `<div style="margin-bottom:12px"><div class="feel" style="margin-bottom:6px">${esc(q)}</div><div class="note">${esc(acc)}</div></div>`); } });
-    const ans = (r && r.text) || acc;
-    S.coach = (S.coach || []).concat([{ q, a: ans }]).slice(-6);
-    safe(() => dbSet("coach", uid(), { date: todayStr(), q, a: ans, week: w, createdAt: Date.now() }), null);
+    let acc = "";
+    const r = await sample(turns, { modelTier: "default", cache: false, onText: ({ text }) => {
+      acc = text; st.textContent = "";
+      el("coachLog").innerHTML = baseLog + `<div style="margin-bottom:14px"><div class="feel" style="margin-bottom:6px">${esc(q)}</div><div class="note">${esc(acc)}</div></div>`;
+    } });
+    const ans = (r && r.text) || acc; if (!ans) throw { code: "empty" };
+    const doc = { date: todayStr(), q, a: ans, week: weekNo(), createdAt: Date.now() };
+    const id = uid(); await safe(() => dbSet("coach", id, doc), "对话没存下来");
+    S.coach = (S.coach || []).concat([Object.assign({ id }, doc)]);
     el("coachQ").value = ""; st.textContent = ""; renderCoach();
   } catch (e) {
-    console.error(e); st.className = "status err";
-    st.textContent = { not_granted: "你没允许这个页面调用 Claude", rate_limited: "问得太频繁,等一下", cancelled: "取消了" }[e && e.code] || "教练没答上来,再试一次";
+    console.error(e); el("coachLog").innerHTML = baseLog; st.className = "status err";
+    st.textContent = { not_granted: "你没允许这个页面调用 Claude", rate_limited: "问得太频繁,等一下再问", cancelled: "取消了", empty: "教练没答上来,再试一次" }[e && e.code] || "出错了,再试一次";
   } finally { btn.disabled = false; }
 }
 function renderPlan() {
