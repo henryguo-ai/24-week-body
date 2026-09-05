@@ -68,7 +68,8 @@ a{color:var(--accent)}
 .btn:disabled{opacity:.5;cursor:default}
 .icon{width:36px;height:36px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;background:var(--surface2);font-size:18px;color:var(--ink2)}
 .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
-.stats div{background:var(--surface);border-radius:12px;padding:8px 6px;text-align:center;box-shadow:var(--shadow)}
+.stats .v{white-space:nowrap}
+.stats div{background:var(--surface);border-radius:12px;padding:8px 6px;text-align:center;box-shadow:var(--shadow);min-width:0;overflow:hidden}
 .stats .k{font-size:10px;letter-spacing:.06em;color:var(--ink3);text-transform:uppercase}
 .stats .v{font-family:"Barlow Condensed",system-ui,sans-serif;font-size:20px;font-weight:700;line-height:1.15}
 .stats .v small{font-size:12px;color:var(--ink3);font-weight:500}
@@ -111,10 +112,14 @@ a{color:var(--accent)}
 .bar{height:8px;border-radius:999px;background:var(--surface2);overflow:hidden}
 .bar i{display:block;height:100%;background:var(--accent);border-radius:999px;transition:width .3s}
 .bar.over i{background:var(--warn)} .bar.ok i{background:var(--good)}
-.macros{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
-.macro .k{font-size:11px;color:var(--ink3);letter-spacing:.08em;text-transform:uppercase}
-.macro .v{font-family:"Barlow Condensed",system-ui,sans-serif;font-size:22px;font-weight:700;line-height:1.1}
-.macro .v small{font-size:12px;color:var(--ink3);font-weight:500;display:block}
+.macros{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}
+@media (min-width:540px){.macros{grid-template-columns:repeat(4,1fr)}}
+.macro{background:var(--surface2);border-radius:12px;padding:12px 12px 11px;min-width:0;overflow:hidden}
+.macro .k{margin-bottom:2px}
+.macro .bar{margin-top:7px;height:6px}
+.macro .k{font-size:12px;color:var(--ink3);letter-spacing:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.macro .v{font-family:"Barlow Condensed",system-ui,sans-serif;font-size:38px;font-weight:700;line-height:1.02;letter-spacing:-.5px;white-space:nowrap}
+.macro .v small{font-size:12px;color:var(--ink3);font-weight:500;display:block;margin-top:3px;letter-spacing:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .verdict{margin-top:10px;padding:8px 12px;border-radius:10px;font-weight:600;font-size:14px;background:var(--surface2)}
 .verdict.good{background:var(--good);color:#fff} .verdict.warn{background:var(--warn);color:#fff} .verdict.mid{background:var(--accent-soft);color:var(--ink)}
 .meal{display:flex;gap:12px;padding:10px 0;border-top:1px solid var(--line);align-items:flex-start}
@@ -163,6 +168,9 @@ nav button.on{color:var(--accent)}
 .banner{background:var(--accent-soft);color:var(--ink);border-radius:12px;padding:10px 12px;font-size:13px;margin-bottom:12px}
 .status{font-size:13px;color:var(--ink2);min-height:18px}
 .status.err{color:var(--bad)}
+.status.busy{color:var(--accent);font-weight:600;background:var(--accent-soft);border-radius:10px;padding:9px 12px;display:flex;align-items:center;gap:9px;min-height:38px}
+.status.busy::before{content:"";width:15px;height:15px;flex:0 0 15px;border-radius:50%;border:2.5px solid var(--accent);border-top-color:transparent;animation:spin .75s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
 .items{font-size:13px;color:var(--ink2);margin-top:6px}
 .items div{display:flex;justify-content:space-between;gap:8px;padding:2px 0}
 .mini{font-size:12px;color:var(--ink3)}
@@ -291,7 +299,7 @@ details.sub summary::-webkit-details-marker{display:none}
       </div>
       <div class="macros" id="macroTiles"></div>
       <div class="verdict" id="foodVerdict"></div>
-      <svg class="chart" id="weekChart" viewBox="0 0 340 90" preserveAspectRatio="xMidYMid meet" style="height:auto;margin-top:10px"></svg>
+      <svg class="chart" id="weekChart" viewBox="0 0 340 56" preserveAspectRatio="xMidYMid meet" style="height:auto;margin-top:12px;max-height:64px"></svg>
       <div class="row between mini"><span>近 7 天热量 · 虚线=目标</span><span id="weekAvg"></span></div>
     </div>
     <div class="card">
@@ -324,9 +332,9 @@ details.sub summary::-webkit-details-marker{display:none}
       <div id="mealList" class="faint">还没有记录</div>
     </div>
     <div class="card">
-      <div class="row between" style="margin-bottom:6px"><h3>💧 水 3.8 L</h3><span class="faint" id="waterTxt"></span></div>
-      <div class="water" id="water"></div>
-      <div class="row between" style="margin-top:12px"><h3>💊 肌酸 5 g(可选)</h3><button class="chip sm" id="creatine">未吃</button></div>
+      <div class="row between"><h3>💧 每天 3.8 L 水</h3><span class="faint">不用记,提醒你一下</span></div>
+      <div class="mini" style="margin-top:6px;line-height:1.7">大概是一个 1 L 水壶装满喝 4 次。训练日多喝一点。<br>尿是浅黄色就够了,清得像水说明喝多了,深黄说明不够。</div>
+      <div class="row between" style="margin-top:14px"><h3>💊 肌酸 5 g(可选)</h3><button class="chip sm" id="creatine">未吃</button></div>
     </div>
   </section>
 
@@ -712,7 +720,7 @@ function showPage(p) {
   S.page = p;
   document.querySelectorAll("nav button").forEach(b => b.classList.toggle("on", b.dataset.page === p));
   document.querySelectorAll(".page").forEach(s => s.classList.toggle("on", s.id === "page-" + p));
-  el("pageTitle").textContent = TITLES[p]; el("timer").hidden = p !== "train";
+  el("pageTitle").textContent = TITLES[p]; el("timer").hidden = p !== "train" && !(S.timerEnd > Date.now());
   if (p === "food") renderFood(); if (p === "body") renderBody(); if (p === "plan") renderPlan();
   window.scrollTo({ top: 0 });
 }
@@ -1046,7 +1054,7 @@ function restDone() {
   toast("休息结束,下一组");
 }
 function startTimer(sec) { unlockAudio(); S.timerEnd = Date.now() + sec * 1000; clearInterval(S.timerId); S.timerId = setInterval(tickTimer, 250); tickTimer(); }
-function tickTimer() { const t = el("timer"); const left = Math.ceil((S.timerEnd - Date.now()) / 1000); if (left <= 0) { clearInterval(S.timerId); if (S.timerEnd) { S.timerEnd = 0; restDone(); } t.classList.add("idle"); el("timerTxt").textContent = "休息"; el("timerSub").textContent = "90s"; return; } t.classList.remove("idle"); el("timerTxt").textContent = Math.floor(left / 60) + ":" + String(left % 60).padStart(2, "0"); el("timerSub").textContent = "点一下停止"; }
+function tickTimer() { const t = el("timer"); if (S.timerEnd > Date.now()) t.hidden = false; else if (S.page !== "train") t.hidden = true; const left = Math.ceil((S.timerEnd - Date.now()) / 1000); if (left <= 0) { clearInterval(S.timerId); if (S.timerEnd) { S.timerEnd = 0; restDone(); } t.classList.add("idle"); el("timerTxt").textContent = "休息"; el("timerSub").textContent = "90s"; return; } t.classList.remove("idle"); el("timerTxt").textContent = Math.floor(left / 60) + ":" + String(left % 60).padStart(2, "0"); el("timerSub").textContent = "点一下停止"; }
 el("timer").addEventListener("click", () => { if (S.timerEnd > Date.now()) { S.timerEnd = 0; tickTimer(); } else startTimer(90); });
 
 /* ======================= FOOD ======================= */
@@ -1090,10 +1098,10 @@ async function renderFood() {
   const tot = S.meals.reduce((a, m) => ({ kcal: a.kcal + (m.kcal || 0), protein: a.protein + (m.protein || 0), carbs: a.carbs + (m.carbs || 0), fat: a.fat + (m.fat || 0) }), { kcal: 0, protein: 0, carbs: 0, fat: 0 });
   const kLeft = T.kcal - tot.kcal, pLeft = T.protein - tot.protein;
   el("macroTiles").innerHTML = `
-    <div class="macro"><div class="k">热量</div><div class="v" style="color:${kLeft < 0 ? "var(--warn)" : "var(--ink)"}">${kLeft >= 0 ? "还能 " + r0(kLeft) : "超 " + r0(-kLeft)}<small>已吃 ${r0(tot.kcal)} / ${T.kcal}</small></div><div class="bar ${kLeft < 0 ? "over" : ""}"><i style="width:${Math.min(100, tot.kcal / T.kcal * 100)}%"></i></div></div>
-    <div class="macro"><div class="k">蛋白</div><div class="v" style="color:${pLeft <= 0 ? "var(--good)" : "var(--ink)"}">${pLeft > 0 ? "还差 " + r0(pLeft) : "✓ 达标"}<small>${r0(tot.protein)} / ${T.protein} g</small></div><div class="bar ${pLeft <= 0 ? "ok" : ""}"><i style="width:${Math.min(100, tot.protein / T.protein * 100)}%"></i></div></div>
-    <div class="macro"><div class="k">碳水</div><div class="v">${r0(tot.carbs)}<small>/ ${T.carbs} g</small></div><div class="bar ${tot.carbs > T.carbs * 1.1 ? "over" : ""}"><i style="width:${Math.min(100, tot.carbs / T.carbs * 100)}%"></i></div></div>
-    <div class="macro"><div class="k">脂肪</div><div class="v" style="color:${tot.fat > T.fat * 1.1 ? "var(--warn)" : "var(--ink)"}">${r0(tot.fat)}<small>/ ${T.fat} g${S.meals.length >= 3 && tot.fat < 60 ? " · 太低" : ""}</small></div><div class="bar ${tot.fat > T.fat * 1.1 ? "over" : ""}"><i style="width:${Math.min(100, tot.fat / T.fat * 100)}%"></i></div></div>`;
+    <div class="macro"><div class="k">${kLeft >= 0 ? "热量还能吃" : "热量超了"}</div><div class="v" style="color:${kLeft < 0 ? "var(--warn)" : "var(--ink)"}">${r0(Math.abs(kLeft))}<small>已吃 ${r0(tot.kcal)} / ${T.kcal}</small></div><div class="bar ${kLeft < 0 ? "over" : ""}"><i style="width:${Math.min(100, tot.kcal / T.kcal * 100)}%"></i></div></div>
+    <div class="macro"><div class="k">${pLeft > 0 ? "蛋白还差" : "蛋白达标"}</div><div class="v" style="color:${pLeft <= 0 ? "var(--good)" : "var(--ink)"}">${pLeft > 0 ? r0(pLeft) : "✓"}<small>${r0(tot.protein)} / ${T.protein} g</small></div><div class="bar ${pLeft <= 0 ? "ok" : ""}"><i style="width:${Math.min(100, tot.protein / T.protein * 100)}%"></i></div></div>
+    <div class="macro"><div class="k">碳水 g</div><div class="v">${r0(tot.carbs)}<small>/ ${T.carbs}</small></div><div class="bar ${tot.carbs > T.carbs * 1.1 ? "over" : ""}"><i style="width:${Math.min(100, tot.carbs / T.carbs * 100)}%"></i></div></div>
+    <div class="macro"><div class="k">脂肪 g</div><div class="v" style="color:${tot.fat > T.fat * 1.1 ? "var(--warn)" : "var(--ink)"}">${r0(tot.fat)}<small>/ ${T.fat}${S.meals.length >= 3 && tot.fat < 60 ? " 低" : ""}</small></div><div class="bar ${tot.fat > T.fat * 1.1 ? "over" : ""}"><i style="width:${Math.min(100, tot.fat / T.fat * 100)}%"></i></div></div>`;
   const V = el("foodVerdict");
   if (!S.meals.length) { V.className = "verdict"; V.textContent = "今天还没记"; }
   else if (tot.kcal > T.kcal * 1.05) { V.className = "verdict warn"; V.textContent = `今天多了 ${r0(tot.kcal - T.kcal)} kcal。明天不用补偿,照常吃`; }
@@ -1104,8 +1112,8 @@ async function renderFood() {
   const days = []; for (let i = 6; i >= 0; i--) days.push(addDays(S.foodDate, -i));
   const byDay = days.map(d => ({ d, kcal: S.weekMeals.filter(m => m.date === d).reduce((a, m) => a + (m.kcal || 0), 0), t: nutritionFor(weekNo(d)).kcal }));
   const logged = byDay.filter(x => x.kcal > 0); const avg = logged.length ? logged.reduce((a, x) => a + x.kcal, 0) / logged.length : 0;
-  const W = 340, H = 90, px = 30, cw = (W - px - 6) / 7, hi = Math.max(3200, ...byDay.map(x => x.kcal)); const Y = v => 8 + (hi - v) / hi * (H - 26);
-  el("weekChart").innerHTML = byDay.map((x, i) => `<rect x="${px + i * cw + 3}" y="${x.kcal ? Y(x.kcal) : H - 18}" width="${cw - 6}" height="${x.kcal ? Y(0) - Y(x.kcal) : 0}" rx="3" fill="${x.kcal > x.t * 1.05 ? "var(--warn)" : "var(--accent)"}" fill-opacity="${x.d === S.foodDate ? 1 : .6}"/><line x1="${px + i * cw + 2}" x2="${px + (i + 1) * cw - 2}" y1="${Y(x.t)}" y2="${Y(x.t)}" stroke="var(--ink3)" stroke-dasharray="3 2"/><text x="${px + i * cw + cw / 2}" y="${H - 4}" text-anchor="middle">${x.d.slice(8)}</text>${x.kcal ? `<text x="${px + i * cw + cw / 2}" y="${Y(x.kcal) - 3}" text-anchor="middle" font-size="10" fill="var(--ink2)">${r0(x.kcal / 100) / 10}k</text>` : ""}`).join("") + `<text x="${px - 4}" y="${Y(T.kcal) + 4}" text-anchor="end">${T.kcal}</text>`;
+  const W = 340, H = 56, px = 26, cw = (W - px - 6) / 7, hi = Math.max(3200, ...byDay.map(x => x.kcal)); const Y = v => 5 + (hi - v) / hi * (H - 17);
+  el("weekChart").innerHTML = byDay.map((x, i) => `<rect x="${px + i * cw + 3}" y="${x.kcal ? Y(x.kcal) : H - 12}" width="${cw - 6}" height="${x.kcal ? Y(0) - Y(x.kcal) : 0}" rx="3" fill="${x.kcal > x.t * 1.05 ? "var(--warn)" : "var(--accent)"}" fill-opacity="${x.d === S.foodDate ? 1 : .6}"/><line x1="${px + i * cw + 2}" x2="${px + (i + 1) * cw - 2}" y1="${Y(x.t)}" y2="${Y(x.t)}" stroke="var(--ink3)" stroke-dasharray="3 2"/><text x="${px + i * cw + cw / 2}" y="${H - 3}" text-anchor="middle" font-size="9">${x.d.slice(8)}</text>${x.kcal ? `<text x="${px + i * cw + cw / 2}" y="${Y(x.kcal) - 2}" text-anchor="middle" font-size="9" fill="var(--ink2)">${r0(x.kcal / 100) / 10}k</text>` : ""}`).join("") + `<text x="${px - 4}" y="${Y(T.kcal) + 3}" text-anchor="end" font-size="9">${T.kcal}</text>`;
   el("weekAvg").textContent = logged.length ? `${logged.length} 天均值 ${r0(avg)}${Math.abs(avg - T.kcal) <= 100 ? " · 按计划走" : avg > T.kcal ? " · 偏高" : " · 偏低"}` : "";
   const Lst = el("mealList");
   if (!S.meals.length) { Lst.className = "faint"; Lst.textContent = "还没有记录"; }
@@ -1117,9 +1125,7 @@ async function renderFood() {
 }
 function renderHabits() {
   const today = S.body.find(b => b.date === todayStr()) || {}; const water = today.water || 0;
-  el("water").innerHTML = Array.from({ length: 8 }, (_, i) => `<i class="${i < water ? "on" : ""}" data-w="${i + 1}"></i>`).join("");
-  el("waterTxt").textContent = `${(water * 0.5).toFixed(1)} L`;
-  el("water").querySelectorAll("[data-w]").forEach(x => x.addEventListener("click", async () => { const n = +x.dataset.w; const nv = n === water ? n - 1 : n; await saveBodyMerge(todayStr(), { water: nv }); renderHabits(); }));
+
   const cr = el("creatine"); cr.textContent = today.creatine ? "✓ 已吃" : "未吃"; cr.classList.toggle("on", !!today.creatine); cr.onclick = async () => { await saveBodyMerge(todayStr(), { creatine: !today.creatine }); renderHabits(); };
 }
 el("mealPhoto").addEventListener("change", async e => {
@@ -1137,7 +1143,7 @@ el("aiBtn").addEventListener("click", () => runEstimate(true));
 async function runEstimate(auto) {
   const txt = el("mealText").value.trim();
   if (!sample) { el("manualBox").hidden = false; if (txt || S.photoBlob) toast("AI 估算用不了,自己填数字"); else toast("先写点内容或拍张照"); return; } if (!txt && !S.photoBlob) { toast("先写点内容或拍张照"); return; }
-  const st = el("aiStatus"); st.className = "status"; st.textContent = "AI 估算中…"; el("aiBtn").disabled = true; el("aiItems").innerHTML = "";
+  const st = el("aiStatus"); st.className = "status busy"; st.textContent = "正在看你吃了什么,大概 5-10 秒…"; el("aiBtn").disabled = true; el("mealText").disabled = true; el("aiItems").innerHTML = "";
   const prompt = `你是给减脂期健身者估算餐食的营养师。宁可高估热量、低估蛋白,绝不美化。
 ${S.photoBlob ? "有照片,以照片判断种类和份量;" : ""}${txt ? "文字:「" + txt + "」,文字写了份量或品牌就以文字为准。" : ""}
 规则:
@@ -1151,10 +1157,10 @@ ${S.photoBlob ? "有照片,以照片判断种类和份量;" : ""}${txt ? "文字
   try { const opts = { modelTier: "default", cache: false }; if (S.photoBlob) opts.images = S.photoBlob; const r = await sample.json(prompt, opts); if (!r || typeof r !== "object") throw { code: "invalid_json" };
     el("mKcal").value = r0(r.kcal_high || r.kcal || 0); el("mP").value = r0(r.protein || 0); el("mC").value = r0(r.carbs || 0); el("mF").value = r0(r.fat || 0);
     el("aiItems").innerHTML = (r.items || []).map(i => `<div><span>${esc(i.name)} ${i.grams ? "· " + r0(i.grams) + "g" : ""}${i.drink ? " 🥤" : ""}</span><span class="num">${r0(i.kcal || 0)} kcal · P${r0(i.protein || 0)}</span></div>`).join("");
-    S.aiRange = r.kcal_low && r.kcal_high ? `${r0(r.kcal_low)}-${r0(r.kcal_high)} kcal` : ""; st.textContent = `${S.aiRange ? S.aiRange + " · " : ""}把握${r.confidence || "中"}${r.note ? " · " + r.note : ""}`; if (!txt && r.items && r.items.length) el("mealText").value = r.items.map(i => i.name).join(","); S.aiUsed = true;
+    S.aiRange = r.kcal_low && r.kcal_high ? `${r0(r.kcal_low)}-${r0(r.kcal_high)} kcal` : ""; st.textContent = `${S.aiRange ? S.aiRange + " · " : ""}把握${r.confidence || "中"}${r.note ? " · " + r.note : ""}`; if (!txt && r.items && r.items.length) el("mealText").value = r.items.map(i => i.name).join(","); S.aiUsed = true; st.className = "status";
     if (auto) { const okAuto = await saveMealNow(true); if (okAuto) st.textContent = `已记 ${r0(r.kcal_high || r.kcal || 0)} kcal · 点上面那条可以改`; }
   } catch (e) { console.error(e); st.className = "status err"; const m = { not_granted: "你没有允许这个页面调用 Claude,手动填数字即可", rate_limited: "调用太频繁,稍等再试", image_rejected: "这张照片不行,换一张", invalid_json: "没解析出结果,再点一次", refused: "这条内容没法估算,手动填", sampling_disabled: "这个账号不能用 AI 估算" }; st.textContent = m[e && e.code] || "估算失败,手动填数字"; if (e && (e.code === "not_granted" || e.code === "sampling_disabled")) { sample = null; el("manualBox").hidden = false; } }
-  finally { el("aiBtn").disabled = false; }
+  finally { el("aiBtn").disabled = false; el("mealText").disabled = false; if (st.className.indexOf("busy") >= 0) st.className = "status"; }
 }
 function openMealEdit(m) {
   openSheet(`<h3 style="margin-bottom:10px">改这一笔</h3>
@@ -1275,11 +1281,11 @@ function drawChart(ws, target) {
 }
 el("saveTape").addEventListener("click", async () => { const d = el("tDate").value || todayStr(); const patch = { waistCm: num(el("tWaist").value), chestCm: num(el("tChest").value), armCm: num(el("tArm").value) }; if (Object.values(patch).every(v => v === null)) { toast("先填一项"); return; } const ok = await saveBodyMerge(d, patch); if (!ok) return; ["tWaist", "tChest", "tArm"].forEach(i => el(i).value = ""); toast("已保存围度"); renderBody(); });
 el("scanPhoto").addEventListener("change", async e => {
-  const f = e.target.files && e.target.files[0]; if (!f) return; const st = el("scanStatus"); st.className = "status"; st.textContent = "处理照片…";
+  const f = e.target.files && e.target.files[0]; if (!f) return; const st = el("scanStatus"); st.className = "status busy"; st.textContent = "处理照片…";
   try {
     const { blob, dataUrl } = await compressImage(f, 1000, 0.7); S.scanDataUrl = dataUrl;
     if (!(sample && canImage)) { st.textContent = "照片已存,数字请手填"; el("scanManual").open = true; return; }
-    st.textContent = "AI 读数中…";
+    st.textContent = "正在读扫描单上的数字,大概 5-10 秒…";
     const r = await sample.json(`这是一张身体成分扫描单照片(Evolt 360 或 InBody)。逐字读数,不要推算、不要换算单位。只返回 JSON:{"device":"evolt|inbody|unknown","dateRaw":"日期原文原样抄写","weight":{"v":数值,"u":"kg|lb"},"bfPct":体脂百分数,"leanMass":{"v":数值,"u":"kg|lb"},"smm":{"v":数值,"u":"kg|lb"},"tbw":{"v":数值,"u":"kg|lb"},"visceralLevel":内脏脂肪等级整数或 null}。读不到填 null,不要猜。忽略基础代谢、代谢年龄、评分、分段、蛋白质、无机盐、建议摄入量。只返回 JSON。`, { images: blob, modelTier: "default", cache: false });
     if (!r || typeof r !== "object") throw { code: "invalid_json" };
     const kgv = x => x && x.v != null && isFinite(+x.v) ? (x.u === "lb" ? toKg(+x.v) : +x.v) : null; const lbv = x => x && x.v != null && isFinite(+x.v) ? (x.u === "kg" ? toLb(+x.v) : +x.v) : null;
