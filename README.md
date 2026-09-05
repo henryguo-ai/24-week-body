@@ -11,6 +11,9 @@
 ```
 去读 https://github.com/henryguo-ai/24-week-body 里的 AGENT.md，
 按里面的说明帮我生成一份身体计划。
+
+（如果打不开，就取这个纯文本地址：
+https://raw.githubusercontent.com/henryguo-ai/24-week-body/main/AGENT.md）
 ```
 
 它会自己读完说明，然后**一轮一轮问你问题** —— 你想达到什么、平时怎么动、身体什么情况、吃什么、有没有伤。答完它先把判断讲给你听（估你消耗多少、缺口多大、多久能到），你点头，它才生成你的版本并发布成你自己的链接。
