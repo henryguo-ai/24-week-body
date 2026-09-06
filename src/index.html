@@ -1146,7 +1146,21 @@ el("mealPhoto").addEventListener("change", async e => {
     if (sample && canImage) { runEstimate(true); }
     else if (sample) {
       el("aiStatus").className = "status";
-      el("aiStatus").innerHTML = `<div style="width:100%"><div style="color:var(--ink);font-weight:600">照片存好了,但这个页面不能把图片发给 AI</div><div class="mini" style="margin-top:4px;line-height:1.6">把包装上的数字抄一句到上面那个框,再点「记这一笔」就行,比如:<br><span style="color:var(--ink2)">蛋白棒 150 cal 28g protein</span><br>数字它读得出来,不用 AI 也能记上。</div></div>`;
+      el("aiStatus").innerHTML = `<div style="width:100%">
+        <div style="color:var(--ink);font-weight:600">照片存好了,但这个页面不能把图片发给 AI</div>
+        <div class="mini" style="margin-top:5px;line-height:1.65">
+          <b>包装食品</b>:把标签上的数字抄一句到上面那个框,比如 <span style="color:var(--ink2)">蛋白棒 150 cal 28g protein</span>,再点「记这一笔」。<br>
+          <b>一桌菜</b>:回 Claude 对话里把这张照片发给它,用下面这句,再把它给的一行粘回上面那个框。
+        </div>
+        <div style="background:var(--surface2);border-radius:10px;padding:8px 10px;margin-top:7px;font-size:12px;line-height:1.6;color:var(--ink2)">看看这桌菜有哪些,每道菜一整份的热量和蛋白估一下,只回一行,格式:菜名 xxxkcal 蛋白xxg / 菜名 xxxkcal 蛋白xxg</div>
+        <button class="btn sm" id="copyAsk" style="margin-top:7px">复制这句话</button>
+      </div>`;
+      const cb = el("copyAsk");
+      if (cb) cb.addEventListener("click", () => {
+        const t = "看看这桌菜有哪些,每道菜一整份的热量和蛋白估一下,只回一行,格式:菜名 xxxkcal 蛋白xxg / 菜名 xxxkcal 蛋白xxg";
+        if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(() => toast("复制好了,去对话里连照片一起发")).catch(() => toast("复制失败,手动选中复制"));
+        else toast("手动选中上面那句复制");
+      });
       el("mealText").focus();
     }
     else { el("manualBox").hidden = false; el("aiStatus").textContent = "照片已存,数字自己填一下"; } }
@@ -1268,7 +1282,11 @@ function askPortion(tot, cnt, note) {
     if (k === "ask") { const v = prompt("几个人分这些菜?", "5"); k = Math.max(1, Math.min(20, parseInt(v, 10) || 1)); }
     st.innerHTML = ""; st.textContent = "记着…";
     const ok = await commitPending(+k);
-    st.textContent = ok ? `已记 ${r0(tot / +k)} kcal${+k > 1 ? `(总量 ${r0(tot)} ÷ ${k} 人)` : ""} · 点上面那条可以改` : "";
+    if (ok) {
+      st.innerHTML = +k > 1
+        ? `<div style="width:100%"><div style="color:var(--ink);font-weight:600">已按 ${k} 人分记下 ${cnt} 条,共 ${r0(tot / +k)} kcal</div><div class="mini" style="margin-top:3px">平均分只是起点 —— <b>某道菜你没吃就删掉,多吃了就点开改数字</b>。</div></div>`
+        : `已记 ${r0(tot)} kcal · 点上面那条可以改`;
+    } else st.textContent = "";
   }));
 }
 async function commitPending(div) {
