@@ -1211,23 +1211,28 @@ ${S.photoBlob ? "有照片,按照片判断种类和份量。照片是包装上�
 餐厅版比家常菜热量+25%脂肪+40%;中式炒菜单独算烹调油一盘15-25ml;含热量的饮料要算进去。
 口语份量按这些锚点换算,别当成一整份:一口≈20-30g;一勺(冰淇淋球/挖球器)≈60-75g;一汤匙≈15g;一小把坚果≈25g;一碗米饭≈180g熟;一片吐司≈30g;一块巧克力≈10g;"尝了一点/一两口"≈30g以内。
 说了"两口""两勺""半份"就按字面算,不要按整份算 —— 这是最容易高估的地方。
+**能数清件数的东西(鸡翅/鸡腿/饺子/串/丸子/块/个),先定每件多少 kcal,再乘件数**,并在 note 里写出算式,例如"9件×65"。件数锚点:烤鸡翅中段≈55-70kcal/件;小鸡腿(drumette)≈60-75;饺子≈40-55;羊肉串≈50-70;虾饺≈45。
 份量说得含糊时,在 note 里写清楚你按多少克算的。
+同样一句输入要给稳定的答案,不要每次换数。
 有几道菜就拆成几条,每条是桌上那道菜的**整份**份量(先别管几个人分)。最多 8 条。
 只返回这个 JSON,不要任何别的字:
-{"items":[{"n":"菜名12字内","kcal":0,"p":0,"c":0,"f":0}],"share":false,"note":"15字内,最大的不确定项"}
+{"items":[{"n":"菜名12字内","kcal":0,"p":0,"c":0,"f":0}],"lo":0,"hi":0,"share":false,"note":"20字内,写算式或最大的不确定项"}
+lo/hi:整餐热量的合理下限和上限(不确定时拉开,别硬给一个数)。
 share:看起来像一桌菜/餐厅整份/明显不止一人份就填 true,单人份填 false。
 数字取整,字段名照抄别改。`;
-  try { const opts = { modelTier: "default", cache: false }; if (S.photoBlob) opts.images = S.photoBlob; const r = await sample.json(prompt, opts); if (!r || typeof r !== "object") throw { code: "invalid_json" };
+  try { const opts = { modelTier: "default" }; if (S.photoBlob) opts.images = S.photoBlob; const r = await sample.json(prompt, opts); if (!r || typeof r !== "object") throw { code: "invalid_json" };
     let items = Array.isArray(r.items) ? r.items.filter(x => x && (x.kcal || x.p)).slice(0, 8) : [];
     if (!items.length) items = [{ n: r.name || shortName(txt) || "这一餐", kcal: r.kcal || 0, p: r.protein || 0, c: r.carbs || 0, f: r.fat || 0 }];
     const tot = items.reduce((a, x) => a + (+x.kcal || 0), 0);
-    S.pending = { items, raw: txt, photo: S.photoDataUrl, note: r.note || "" };
+    const lo = +r.lo || 0, hi = +r.hi || 0;
+    const rangeTxt = (lo && hi && hi > lo) ? `${r0(lo)}-${r0(hi)} kcal` : "";
+    S.pending = { items, raw: txt, photo: S.photoDataUrl, note: [rangeTxt, r.note || ""].filter(Boolean).join(" · ") };
     st.className = "status";
     el("aiItems").innerHTML = items.map(x => `<div><span>${esc(x.n || "")}</span><span class="num">${r0(x.kcal || 0)} kcal · P${r0(x.p || 0)}</span></div>`).join("");
     S.aiUsed = true;
     const askShare = r.share === true || items.length >= 3 || tot >= 1000;
     if (auto && askShare) { askPortion(tot, items.length, r.note || ""); return; }
-    if (auto) { const k = await commitPending(1); if (k) st.textContent = `已记 ${r0(tot)} kcal · 点上面那条可以改`; return; }
+    if (auto) { const k = await commitPending(1); if (k) st.textContent = `已记 ${r0(tot)} kcal${rangeTxt ? `(估算区间 ${rangeTxt})` : ""}${r.note ? " · " + r.note : ""} · 估得不对点上面那条改`; return; }
     st.textContent = r.note || "";
     el("mKcal").value = r0(tot); el("mP").value = r0(items.reduce((a, x) => a + (+x.p || 0), 0)); el("mC").value = r0(items.reduce((a, x) => a + (+x.c || 0), 0)); el("mF").value = r0(items.reduce((a, x) => a + (+x.f || 0), 0)); S.mealName = items.length === 1 ? items[0].n : "";
   } catch (e) {
@@ -1278,7 +1283,7 @@ function openMealEdit(m) {
 function askPortion(tot, cnt, note) {
   const st = el("aiStatus"); st.className = "status";
   st.innerHTML = `<div style="width:100%">
-    <div style="font-weight:600;color:var(--ink);margin-bottom:2px">${cnt > 1 ? cnt + " 道菜,共 " : ""}${r0(tot)} kcal${note ? " · " + esc(note) : ""}</div>
+    <div style="font-weight:600;color:var(--ink);margin-bottom:2px">${cnt > 1 ? cnt + " 道菜,共 " : ""}${r0(tot)} kcal</div>${note ? `<div class="mini" style="margin-bottom:4px">${esc(note)}</div>` : ""}
     <div class="mini" style="margin-bottom:7px">这些是你一个人吃的,还是几个人分?</div>
     <div class="chips" style="padding:0">${[1, 2, 3, 4].map(k => `<button class="chip sm" data-share="${k}">${k === 1 ? "我一个人" : k + " 人分"}</button>`).join("")}
       <button class="chip sm" data-share="ask">其他</button></div></div>`;
